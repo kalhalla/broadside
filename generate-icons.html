@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Broadside Icon Generator</title>
+  <style>
+    body { font-family: system-ui; padding: 2rem; background: #1a1614; color: #f4f1ea; }
+    h1 { margin-bottom: 2rem; }
+    .icons { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .icon-preview { background: #2a2420; padding: 1rem; border-radius: 8px; text-align: center; }
+    .icon-preview canvas { display: block; margin: 0 auto 0.5rem; }
+    .icon-preview span { font-size: 0.8rem; opacity: 0.7; }
+    button { background: #c4a747; color: #1a1614; border: none; padding: 1rem 2rem; font-size: 1rem; cursor: pointer; margin-top: 1rem; }
+    button:hover { background: #d4b84a; }
+  </style>
+</head>
+<body>
+  <h1>Broadside Icon Generator</h1>
+  <p>Click each icon to download, or use "Download All" below.</p>
+  
+  <div class="icons" id="icons"></div>
+  
+  <button onclick="downloadAll()">Download All Icons</button>
+  
+  <script>
+    const sizes = [16, 32, 180, 192, 512];
+    const canvases = {};
+    
+    function drawIcon(ctx, size) {
+      const cream = '#f4f1ea';
+      const ink = '#1a1614';
+      const red = '#8b2500';
+      const gold = '#c4a747';
+      
+      // Background
+      ctx.fillStyle = ink;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Border
+      const borderWidth = Math.max(1, size * 0.04);
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = borderWidth;
+      ctx.strokeRect(borderWidth, borderWidth, size - borderWidth * 2, size - borderWidth * 2);
+      
+      // Inner area
+      const padding = size * 0.15;
+      
+      // Draw stylized "B" made of press elements
+      ctx.fillStyle = cream;
+      ctx.strokeStyle = cream;
+      
+      const centerX = size / 2;
+      const centerY = size / 2;
+      
+      if (size >= 64) {
+        // Larger icons: draw press shape
+        ctx.lineWidth = Math.max(2, size * 0.03);
+        
+        // Press base
+        const baseWidth = size * 0.5;
+        const baseY = centerY + size * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(centerX - baseWidth/2, baseY);
+        ctx.lineTo(centerX + baseWidth/2, baseY);
+        ctx.stroke();
+        
+        // Uprights
+        ctx.beginPath();
+        ctx.moveTo(centerX - baseWidth/3, baseY);
+        ctx.lineTo(centerX - baseWidth/3, centerY - size * 0.15);
+        ctx.moveTo(centerX + baseWidth/3, baseY);
+        ctx.lineTo(centerX + baseWidth/3, centerY - size * 0.15);
+        ctx.stroke();
+        
+        // Top bar
+        ctx.beginPath();
+        ctx.moveTo(centerX - baseWidth/2.5, centerY - size * 0.15);
+        ctx.lineTo(centerX + baseWidth/2.5, centerY - size * 0.15);
+        ctx.stroke();
+        
+        // Platen (press plate)
+        ctx.beginPath();
+        ctx.moveTo(centerX - baseWidth/4, centerY);
+        ctx.lineTo(centerX + baseWidth/4, centerY);
+        ctx.lineTo(centerX + baseWidth/3, baseY - size * 0.08);
+        ctx.lineTo(centerX - baseWidth/3, baseY - size * 0.08);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Lever
+        ctx.strokeStyle = gold;
+        ctx.beginPath();
+        ctx.moveTo(centerX + baseWidth/3, centerY - size * 0.15);
+        ctx.lineTo(centerX + baseWidth/2, centerY - size * 0.3);
+        ctx.stroke();
+        
+        // Lever handle
+        ctx.fillStyle = gold;
+        ctx.beginPath();
+        ctx.arc(centerX + baseWidth/2, centerY - size * 0.32, size * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        
+      } else {
+        // Small icons: just draw "B" letterform
+        ctx.font = `bold ${size * 0.6}px Georgia, serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('B', centerX, centerY);
+      }
+      
+      // Corner diamonds (for larger icons)
+      if (size >= 64) {
+        ctx.fillStyle = red;
+        const cornerOffset = size * 0.12;
+        const diamondSize = size * 0.04;
+        
+        [[cornerOffset, cornerOffset], [size - cornerOffset, cornerOffset],
+         [cornerOffset, size - cornerOffset], [size - cornerOffset, size - cornerOffset]].forEach(([x, y]) => {
+          ctx.beginPath();
+          ctx.moveTo(x, y - diamondSize);
+          ctx.lineTo(x + diamondSize, y);
+          ctx.lineTo(x, y + diamondSize);
+          ctx.lineTo(x - diamondSize, y);
+          ctx.closePath();
+          ctx.fill();
+        });
+      }
+    }
+    
+    function createIcon(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      canvas.style.width = Math.min(size, 128) + 'px';
+      canvas.style.height = Math.min(size, 128) + 'px';
+      canvas.style.cursor = 'pointer';
+      
+      const ctx = canvas.getContext('2d');
+      drawIcon(ctx, size);
+      
+      canvas.onclick = () => downloadIcon(canvas, size);
+      canvases[size] = canvas;
+      
+      return canvas;
+    }
+    
+    function downloadIcon(canvas, size) {
+      const link = document.createElement('a');
+      link.download = `icon-${size}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+    
+    function downloadAll() {
+      sizes.forEach(size => {
+        setTimeout(() => downloadIcon(canvases[size], size), size * 2);
+      });
+    }
+    
+    // Generate icons
+    const container = document.getElementById('icons');
+    sizes.forEach(size => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'icon-preview';
+      wrapper.appendChild(createIcon(size));
+      const label = document.createElement('span');
+      label.textContent = `${size}×${size}`;
+      wrapper.appendChild(label);
+      container.appendChild(wrapper);
+    });
+    
+    // Also create OG image (1200x630)
+    const ogCanvas = document.createElement('canvas');
+    ogCanvas.width = 1200;
+    ogCanvas.height = 630;
+    const ogCtx = ogCanvas.getContext('2d');
+    
+    // OG image background
+    ogCtx.fillStyle = '#1a1614';
+    ogCtx.fillRect(0, 0, 1200, 630);
+    
+    // Border
+    ogCtx.strokeStyle = '#c4a747';
+    ogCtx.lineWidth = 4;
+    ogCtx.strokeRect(30, 30, 1140, 570);
+    
+    // Title
+    ogCtx.fillStyle = '#f4f1ea';
+    ogCtx.font = 'bold 72px Georgia, serif';
+    ogCtx.textAlign = 'center';
+    ogCtx.fillText('BROADSIDE', 600, 250);
+    
+    // Tagline
+    ogCtx.font = 'italic 32px Georgia, serif';
+    ogCtx.fillStyle = '#c4a747';
+    ogCtx.fillText('book recommendations from strangers', 600, 320);
+    
+    // Description
+    ogCtx.font = '28px Georgia, serif';
+    ogCtx.fillStyle = '#a09080';
+    ogCtx.fillText('Share a book that changed you. Receive one from a stranger.', 600, 420);
+    
+    // URL
+    ogCtx.font = '24px Georgia, serif';
+    ogCtx.fillStyle = '#f4f1ea';
+    ogCtx.fillText('broadside.press', 600, 550);
+    
+    const ogWrapper = document.createElement('div');
+    ogWrapper.className = 'icon-preview';
+    ogCanvas.style.width = '300px';
+    ogCanvas.style.height = '158px';
+    ogCanvas.style.cursor = 'pointer';
+    ogCanvas.onclick = () => {
+      const link = document.createElement('a');
+      link.download = 'og-image.png';
+      link.href = ogCanvas.toDataURL('image/png');
+      link.click();
+    };
+    ogWrapper.appendChild(ogCanvas);
+    const ogLabel = document.createElement('span');
+    ogLabel.textContent = 'OG Image (1200×630)';
+    ogWrapper.appendChild(ogLabel);
+    container.appendChild(ogWrapper);
+  </script>
+</body>
+</html>
