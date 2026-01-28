@@ -28,6 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+  
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --ink: #1a1614;
@@ -881,26 +884,16 @@
     const AMAZON_AFFILIATE_TAG = 'kalhalla-21';
     
     // Supabase client - only loaded when not in demo mode
-    let supabase = null;
+    let supabaseClient = null;
     
-    // Load Supabase dynamically only when needed
-    async function initSupabase() {
+    // Initialize Supabase client
+    function initSupabase() {
       if (!USE_DEMO_MODE && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         try {
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/@supabase/supabase-js@2';
-          document.head.appendChild(script);
-          await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = reject;
-          });
-          // Wait a tick for the global to be available
-          await new Promise(r => setTimeout(r, 100));
-          const { createClient } = window.supabase;
-          supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
           console.log('Supabase initialized successfully');
         } catch (e) {
-          console.error('Supabase failed to load:', e);
+          console.error('Supabase failed to initialize:', e);
         }
       }
     }
@@ -995,7 +988,7 @@
         localStorage.setItem('broadside_recommendations', JSON.stringify(recommendations));
         return newRec;
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('recommendations')
           .insert([{ 
             title: title, 
@@ -1022,13 +1015,13 @@
         return available[Math.floor(Math.random() * available.length)];
       } else {
         // Check if supabase is initialized
-        if (!supabase) {
+        if (!supabaseClient) {
           console.error('Supabase not initialized');
           alert('Connection error. Please refresh the page.');
           return null;
         }
         // Fetch all recommendations except user's own
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('recommendations')
           .select('*')
           .neq('fingerprint', userFingerprint);
@@ -1036,7 +1029,7 @@
         if (error || !data || data.length === 0) {
           console.error('Error fetching:', error);
           // Fallback to any recommendation
-          const { data: fallback } = await supabase
+          const { data: fallback } = await supabaseClient
             .from('recommendations')
             .select('*')
             .limit(50);
@@ -1393,7 +1386,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
       userFingerprint = generateFingerprint();
       if (!USE_DEMO_MODE) {
-        await initSupabase();
+        initSupabase();
       }
       
       // Register service worker for PWA
