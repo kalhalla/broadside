@@ -878,7 +878,7 @@
     const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
     
     // Amazon Associates tag - replace with your tag
-    const AMAZON_AFFILIATE_TAG = 'YOUR_AMAZON_TAG-20';
+    const AMAZON_AFFILIATE_TAG = 'kalhalla-21';
     
     // Supabase client - only loaded when not in demo mode
     let supabase = null;
@@ -1042,7 +1042,7 @@
     function generateAmazonLink(bookTitle) {
       // Extract just the book title (remove author if present)
       const searchTerm = encodeURIComponent(bookTitle);
-      return `https://www.amazon.com/s?k=${searchTerm}&tag=${AMAZON_AFFILIATE_TAG}`;
+      return `https://www.amazon.co.uk/s?k=${searchTerm}&tag=${AMAZON_AFFILIATE_TAG}`;
     }
 
     function copyLink() {
