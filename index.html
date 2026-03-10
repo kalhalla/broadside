@@ -8,6 +8,7 @@
   <!-- PWA Meta Tags -->
   <meta name="description" content="Share a book that changed you. Receive one from a stranger. No profiles, no algorithms, just ink and intention.">
   <meta name="theme-color" content="#1a1614">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Broadside">
@@ -429,6 +430,32 @@
       opacity: 1;
     }
 
+    .btn-report {
+      display: block;
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      background: none;
+      border: none;
+      color: var(--ink-light);
+      font-family: 'IM Fell English', serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .btn-report:hover {
+      opacity: 1;
+      color: var(--red);
+    }
+
+    .btn-report.reported {
+      opacity: 0.4;
+      cursor: default;
+      color: var(--ink-light);
+    }
+
     /* States */
     .view {
       display: none;
@@ -815,6 +842,9 @@
               Pressed by a stranger, found by you.
             </p>
           </div>
+          <button class="btn-report" onclick="handleReport()" id="report-btn">
+            ⚑ Report this recommendation
+          </button>
         </div>
         
         <div class="share-buttons">
@@ -975,7 +1005,99 @@
       return seedRecommendations;
     }
 
+    // =====================
+    // CONTENT MODERATION
+    // =====================
+
+    // Blocked terms — slurs, hate speech, explicit content
+    // Using partial patterns to catch variations (plurals, suffixes, leetspeak)
+    const BLOCKED_PATTERNS = [
+      // Racial slurs
+      /\bn[i1!|]gg/i, /\bk[i1!|]ke/i, /\bsp[i1!|]c[ks]?\b/i, /\bch[i1!|]nk/i,
+      /\bwet\s*back/i, /\bcoon[s]?\b/i, /\bdarkie/i, /\bgook/i, /\bslant.?eye/i,
+      /\btowel\s*head/i, /\brag\s*head/i, /\bsand.?n[i1!|]g/i, /\bcamel.?jockey/i,
+      /\bbeaner/i, /\bgringo/i, /\bpaki\b/i, /\bwog[s]?\b/i,
+      // Homophobic/transphobic slurs  
+      /\bf[a@4]g[gs]?[o0]?t?/i, /\bdyke[s]?\b/i, /\btr[a@4]nn/i, /\bshemale/i,
+      // Misogynistic slurs
+      /\bcunt[s]?\b/i, /\bwh[o0]re[s]?\b/i, /\bslut[s]?\b/i,
+      // Antisemitic
+      /\bheeb/i, /\bjew.?boy/i, /\bholo.?hoax/i,
+      // General hate/violence
+      /\bkill\s*(all|every|the)\b/i, /\bgas\s*the/i, /\bheil\s*h/i,
+      /\b(white|black)\s*power\b/i, /\bethnic\s*cleans/i,
+      /\brape[ds]?\b/i, /\bmolest/i,
+      // Explicit sexual content
+      /\bporn/i, /\bhentai/i, /\bxxx\b/i, /\bjizz/i, /\bcum\s*dump/i,
+      /\bf[u\*]ck\s*(you|off|this)/i,
+    ];
+
+    // Common spam patterns
+    const SPAM_PATTERNS = [
+      /https?:\/\//i,           // URLs
+      /\b(buy|sale|discount|free money|crypto|bitcoin|nft)\b/i,
+      /(.)\1{4,}/,              // Repeated characters (aaaaaaa)
+      /\b(dm me|whatsapp|telegram)\b/i,
+    ];
+
+    function containsBlockedContent(text) {
+      const combined = text.toLowerCase();
+      for (const pattern of BLOCKED_PATTERNS) {
+        if (pattern.test(combined)) return { blocked: true, reason: 'inappropriate' };
+      }
+      for (const pattern of SPAM_PATTERNS) {
+        if (pattern.test(combined)) return { blocked: true, reason: 'spam' };
+      }
+      return { blocked: false };
+    }
+
+    async function reportRecommendation(title, reason) {
+      if (!supabaseClient) return;
+      
+      try {
+        await supabaseClient
+          .from('reports')
+          .insert([{
+            recommendation_title: title,
+            recommendation_reason: reason,
+            reported_by: userFingerprint,
+            reported_at: new Date().toISOString()
+          }]);
+      } catch (e) {
+        console.error('Report failed:', e);
+      }
+    }
+
+    async function handleReport() {
+      const btn = document.getElementById('report-btn');
+      if (btn.classList.contains('reported')) return;
+      
+      const title = document.getElementById('result-title').textContent;
+      const reason = document.getElementById('result-reason').textContent;
+      
+      await reportRecommendation(title, reason);
+      
+      btn.textContent = '✓ Reported — thank you';
+      btn.classList.add('reported');
+      
+      // Show toast
+      const toast = document.getElementById('toast');
+      toast.textContent = 'Reported. Thank you for helping keep Broadside safe.';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
     async function saveRecommendation(title, reason) {
+      // Check for blocked content before saving
+      const titleCheck = containsBlockedContent(title);
+      const reasonCheck = containsBlockedContent(reason);
+      
+      if (titleCheck.blocked || reasonCheck.blocked) {
+        alert('Your submission could not be accepted. Please ensure your recommendation is respectful and book-related.');
+        showView('submit-view');
+        return null;
+      }
+
       if (USE_DEMO_MODE) {
         const recommendations = getStoredRecommendations();
         const newRec = {
@@ -1005,6 +1127,10 @@
       }
     }
 
+    // Track recently shown recommendations to avoid repeats
+    const recentlyShown = [];
+    const RECENT_LIMIT = 10;
+
     async function getRandomRecommendation() {
       if (USE_DEMO_MODE) {
         const recommendations = getStoredRecommendations();
@@ -1020,15 +1146,31 @@
           alert('Connection error. Please refresh the page.');
           return null;
         }
-        // Fetch all recommendations except user's own
-        const { data, error } = await supabaseClient
-          .from('recommendations')
+
+        // Use Supabase's built-in random ordering via PostgREST
+        // Fetch a small batch, randomly ordered, excluding user's own
+        let query = supabaseClient
+          .from('random_recommendations')
           .select('*')
-          .neq('fingerprint', userFingerprint);
+          .neq('fingerprint', userFingerprint)
+          .limit(20);
+
+        let { data, error } = await query;
         
+        // Fallback: if the view doesn't exist yet, query the table directly
+        if (error) {
+          console.warn('Random view not available, using table fallback');
+          const result = await supabaseClient
+            .from('recommendations')
+            .select('*')
+            .neq('fingerprint', userFingerprint);
+          data = result.data;
+          error = result.error;
+        }
+
         if (error || !data || data.length === 0) {
           console.error('Error fetching:', error);
-          // Fallback to any recommendation
+          // Last resort fallback — any recommendation
           const { data: fallback } = await supabaseClient
             .from('recommendations')
             .select('*')
@@ -1038,7 +1180,25 @@
           }
           return null;
         }
-        return data[Math.floor(Math.random() * data.length)];
+
+        // Filter out recently shown titles
+        let fresh = data.filter(r => !recentlyShown.includes(r.title));
+        
+        // If everything's been shown recently, reset and use full set
+        if (fresh.length === 0) {
+          recentlyShown.length = 0;
+          fresh = data;
+        }
+
+        const pick = fresh[Math.floor(Math.random() * fresh.length)];
+        
+        // Track this recommendation
+        recentlyShown.push(pick.title);
+        if (recentlyShown.length > RECENT_LIMIT) {
+          recentlyShown.shift();
+        }
+
+        return pick;
       }
     }
 
@@ -1365,6 +1525,11 @@
         document.getElementById('result-reason').textContent = rec.reason;
         document.getElementById('result-date').textContent = 'Pressed on ' + formatDate(rec.created_at);
         document.getElementById('amazon-link').href = generateAmazonLink(rec.title);
+        
+        // Reset report button
+        const reportBtn = document.getElementById('report-btn');
+        reportBtn.textContent = '⚑ Report this recommendation';
+        reportBtn.classList.remove('reported');
         
         showView('result-view');
       }, 800);
