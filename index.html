@@ -433,14 +433,13 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const USE_DEMO_MODE = false;
     const SUPABASE_URL = 'https://gjvdduktsfgnzwovsdib.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdmRkdWt0c2Znbnp3b3ZzZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MzA5MjEsImV4cCI6MjA4NTIwNjkyMX0.LjUNh1MTLsevRW1ZdOHHX_YQ7Y08tonZNoZyXUiDyQo';
     const AMAZON_AFFILIATE_TAG = 'kalhalla-21';
-    let supabase;
-    if (!USE_DEMO_MODE && typeof window.supabase !== 'undefined') supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let userFingerprint = '';
     let currentRecommendation = null;
@@ -557,7 +556,7 @@
       try{
         let rec;
         if(USE_DEMO_MODE){await new Promise(r=>setTimeout(r,1400));rec=DEMO_RECS[Math.floor(Math.random()*DEMO_RECS.length)];}
-        else{const{data,error}=await supabase.from('recommendations').select('*').neq('fingerprint',userFingerprint).neq('fingerprint','null');if(error)throw error;if(!data||!data.length){showToast('No recommendations yet. Be the first!');goTo('home-view');return;}rec=data[Math.floor(Math.random()*data.length)];}
+        else{const{data,error}=await db.from('recommendations').select('*').neq('fingerprint',userFingerprint).neq('fingerprint','null');if(error)throw error;if(!data||!data.length){showToast('No recommendations yet. Be the first!');goTo('home-view');return;}rec=data[Math.floor(Math.random()*data.length)];}
         currentRecommendation=rec;
         document.getElementById('result-title').textContent=rec.title;
         document.getElementById('result-reason').textContent='\u201C'+rec.reason+'\u201D';
@@ -579,7 +578,7 @@
       goTo('submit-loading');
       try{
         if(USE_DEMO_MODE)await new Promise(r=>setTimeout(r,1000));
-        else{const{error}=await supabase.from('recommendations').insert([{title,reason,fingerprint:userFingerprint}]);if(error)throw error;}
+        else{const{error}=await db.from('recommendations').insert([{title,reason,fingerprint:userFingerprint}]);if(error)throw error;}
         document.getElementById('book-title').value='';document.getElementById('book-reason').value='';updateCharCount();updateSubmitBtn();
         setTimeout(()=>{goTo('confirm-view');setTimeout(fireConfetti,300);},200);
       }catch(e){console.error(e);showToast('Could not submit.');goTo('submit-view');}
@@ -587,7 +586,7 @@
 
     async function reportRecommendation(){
       if(!currentRecommendation)return;
-      if(!USE_DEMO_MODE&&supabase){try{await supabase.from('reports').insert([{recommendation_id:currentRecommendation.id,reporter_fingerprint:userFingerprint,reason:'user_report'}]);}catch(e){}}
+      if(!USE_DEMO_MODE&&db){try{await db.from('reports').insert([{recommendation_id:currentRecommendation.id,reporter_fingerprint:userFingerprint,reason:'user_report'}]);}catch(e){}}
       showToast('Reported. Thank you.');
     }
 
@@ -691,7 +690,7 @@
     function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
     function updateCharCount(){const ta=document.getElementById('book-reason'),c=document.getElementById('reason-count'),l=ta.value.length;c.textContent=l+' / 280';c.className='char-count'+(l>260?' at-limit':l>220?' near-limit':'');}
     function updateSubmitBtn(){const t=document.getElementById('book-title').value.trim(),r=document.getElementById('book-reason').value.trim();document.getElementById('submit-btn').disabled=!(t&&r);}
-    async function loadCount(){const el=document.getElementById('rec-count');if(USE_DEMO_MODE){el.textContent=DEMO_RECS.length;return;}try{const{count,error}=await supabase.from('recommendations').select('*',{count:'exact',head:true});if(!error&&count!==null)el.textContent=count;}catch(e){el.textContent='\u2014';}}
+    async function loadCount(){const el=document.getElementById('rec-count');if(USE_DEMO_MODE){el.textContent=DEMO_RECS.length;return;}try{const{count,error}=await db.from('recommendations').select('*',{count:'exact',head:true});if(!error&&count!==null)el.textContent=count;}catch(e){el.textContent='\u2014';}}
 
     document.addEventListener('DOMContentLoaded',()=>{
       userFingerprint=generateFingerprint();
