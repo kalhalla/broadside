@@ -2,1567 +2,703 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Broadside — Book Recommendations from Strangers</title>
-  
-  <!-- PWA Meta Tags -->
-  <meta name="description" content="Share a book that changed you. Receive one from a stranger. No profiles, no algorithms, just ink and intention.">
-  <meta name="theme-color" content="#1a1614">
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#e8e8e8">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Broadside">
-  <link rel="manifest" href="manifest.json">
-  
-  <!-- Icons -->
-  <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="icon-16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
-  
-  <!-- Open Graph / Social -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Broadside — Book Recommendations from Strangers">
+  <meta property="og:title" content="Broadside — A Book from a Stranger">
   <meta property="og:description" content="Share a book that changed you. Receive one from a stranger.">
-  <meta property="og:image" content="og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  
+  <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
-  
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink: #1a1614;
-      --ink-light: #2a2420;
-      --cream: #f4f1ea;
-      --paper: #e8e4db;
-      --red: #8b2500;
-      --red-dark: #6b1d00;
-      --wood: #3d2b1f;
-      --wood-light: #5c4033;
-      --gold: #c4a747;
+      --bg: #e8e8e8;
+      --shadow-light: #ffffff;
+      --shadow-dark: #bebebe;
+      --neu-out: 6px 6px 16px var(--shadow-dark), -6px -6px 16px var(--shadow-light);
+      --neu-out-sm: 3px 3px 8px var(--shadow-dark), -3px -3px 8px var(--shadow-light);
+      --neu-out-lg: 10px 10px 24px var(--shadow-dark), -10px -10px 24px var(--shadow-light);
+      --neu-out-xl: 14px 14px 32px var(--shadow-dark), -14px -14px 32px var(--shadow-light);
+      --neu-in: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light);
+      --neu-in-sm: inset 2px 2px 6px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
+      --neu-in-lg: inset 6px 6px 14px var(--shadow-dark), inset -6px -6px 14px var(--shadow-light);
+      /* Blind emboss — transparent text, shadow only */
+      --emboss-text:
+        -1px -1px 1px rgba(255,255,255,0.8),
+        1px 1px 1px rgba(0,0,0,0.12);
+      --emboss-text-lg:
+        -1px -1px 2px rgba(255,255,255,0.85),
+        1px 1px 2px rgba(0,0,0,0.1);
+      --accent: #1a1a1a;
+      --text: #1a1a1a;
+      --text-secondary: #555;
+      --text-muted: #8a8a8a;
+      --font-display: 'EB Garamond', Georgia, serif;
+      --font-body: 'Space Grotesk', system-ui, sans-serif;
+      --radius: 20px; --radius-sm: 16px; --radius-pill: 50px; --radius-xs: 10px;
+      --max-width: 460px;
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      height: 100%;
-    }
-
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: 'IM Fell English', serif;
-      background: var(--ink);
-      color: var(--cream);
-      min-height: 100vh;
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
     }
 
-    /* Noise texture overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0.03;
-      pointer-events: none;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-      z-index: 1000;
+
+    /* Floating letter particle canvas */
+    #letter-canvas {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+    #confetti-canvas {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      z-index: 100; pointer-events: none;
     }
 
     .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      width: 100%; max-width: var(--max-width);
+      padding: 0 1.5rem; position: relative; z-index: 1;
     }
 
-    /* Header */
-    header {
-      text-align: center;
-      padding: 2rem 0 3rem;
+    /* HEADER */
+    header { text-align: center; padding: 2.5rem 0 0; }
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 2rem; font-weight: 600;
+      letter-spacing: 0.03em;
+      color: rgba(0,0,0,0.03);
+      text-shadow:
+        -1px -1px 2px rgba(255,255,255,0.85),
+        1px 1px 2px rgba(0,0,0,0.1);
+      cursor: default;
+    }
+    .logo-text .ink {
+      color: #1a1a1a;
+      text-shadow: none;
     }
 
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 3.5rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-      position: relative;
-      display: inline-block;
-    }
+    /* HERO */
+    .hero { text-align: center; padding: 2rem 0 1rem; }
 
-    .logo::before,
-    .logo::after {
-      content: '◆';
-      font-size: 0.4em;
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--red);
-    }
-
-    .logo::before {
-      left: -1.5em;
-    }
-
-    .logo::after {
-      right: -1.5em;
-    }
-
-    .tagline {
-      font-style: italic;
-      font-size: 1.1rem;
-      color: var(--gold);
-      letter-spacing: 0.05em;
-    }
-
-    /* Press illustration */
-    .press-illustration {
-      width: 320px;
-      height: 300px;
-      margin: 2rem auto;
-      position: relative;
-    }
-
-    .press-svg {
-      width: 100%;
-      height: 100%;
-      fill: none;
-      stroke: var(--cream);
-      stroke-width: 1;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .press-svg .lever-group {
-      transform-origin: 245px 140px;
-      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .press-svg.pulled .lever-group {
-      transform: rotate(-20deg);
-    }
-
-    .press-svg .detail {
-      stroke-width: 0.5;
-      opacity: 0.6;
-    }
-
-    .press-svg .fine {
-      stroke-width: 0.3;
-      opacity: 0.4;
-    }
-
-    .press-svg .accent {
-      stroke: var(--gold);
-      stroke-width: 1.2;
-    }
-
-    .press-svg .heavy {
-      stroke-width: 1.8;
-    }
-
-    .press-svg .medium {
-      stroke-width: 1.2;
-    }
-
-    .press-svg .fill-accent {
-      fill: var(--gold);
-      stroke: var(--gold);
-    }
-
-    .press-svg .fill-dark {
-      fill: var(--ink);
-      stroke: var(--cream);
-    }
-
-    .press-svg .crosshatch {
-      stroke-width: 0.3;
-      opacity: 0.3;
-    }
-
-    /* Decorative rule */
-    .ornament {
-      text-align: center;
-      font-size: 1.5rem;
-      color: var(--gold);
-      margin: 1.5rem 0;
-      letter-spacing: 0.5em;
-    }
-
-    /* Main content area */
-    main {
-      flex: 1;
-    }
-
-    /* The paper/card where content appears */
-    .broadsheet {
-      background: var(--cream);
-      color: var(--ink);
-      padding: 2rem;
-      position: relative;
-      box-shadow: 
-        0 2px 4px rgba(0,0,0,0.3),
-        0 8px 16px rgba(0,0,0,0.2);
-      margin-bottom: 2rem;
-    }
-
-    .broadsheet::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
-      opacity: 0.03;
-      pointer-events: none;
-    }
-
-    .broadsheet-header {
-      text-align: center;
-      border-bottom: 2px solid var(--ink);
-      padding-bottom: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .broadsheet-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.2rem;
+    .hero-text {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 2.2;
       text-transform: uppercase;
       letter-spacing: 0.2em;
-    }
-
-    .broadsheet-date {
-      font-size: 0.85rem;
-      font-style: italic;
-      margin-top: 0.25rem;
-      color: var(--ink-light);
-    }
-
-    /* Form elements */
-    .form-group {
+      color: var(--text-secondary);
       margin-bottom: 1.5rem;
     }
 
-    label {
-      display: block;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-      color: var(--ink-light);
+    .hero-text .ink {
+      color: var(--text);
+      font-weight: 700;
     }
 
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 0.75rem;
-      font-family: 'Special Elite', monospace;
-      font-size: 1rem;
-      background: var(--paper);
-      border: 1px solid var(--ink-light);
-      color: var(--ink);
-      transition: all 0.2s;
+    .hero-sub {
+      font-size: 0.88rem; line-height: 1.6;
+      color: var(--text-muted); font-weight: 400;
+      max-width: 340px; margin: 0 auto 1.5rem;
     }
 
-    input[type="text"]:focus,
-    textarea:focus {
-      outline: none;
-      border-color: var(--red);
-      box-shadow: 0 0 0 2px rgba(139, 37, 0, 0.1);
+    /* Traits */
+    .traits { display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .trait {
+      font-family: var(--font-body);
+      font-size: 0.62rem; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.15em;
+      color: var(--text-muted);
+      cursor: default;
+    }
+    .trait .ink-dot {
+      display: inline-block;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--text);
+      margin-right: 0.4em;
+      vertical-align: middle;
     }
 
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-      line-height: 1.6;
-    }
-
-    .char-count {
-      text-align: right;
-      font-size: 0.8rem;
-      color: var(--ink-light);
-      margin-top: 0.25rem;
-    }
-
-    /* Buttons */
+    /* BUTTONS — chunky extruded like the reference */
+    .actions { display: flex; flex-direction: column; gap: 1rem; padding: 0.75rem 0 1rem; }
     .btn {
-      display: block;
-      width: 100%;
-      padding: 1rem 2rem;
-      font-family: 'Playfair Display', serif;
-      font-size: 1.1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      border: none;
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      width: 100%; padding: 1.15rem 1.5rem;
+      border: none; border-radius: var(--radius);
+      font-family: var(--font-body); font-size: 0.88rem; font-weight: 500;
+      cursor: pointer; position: relative; overflow: hidden;
+      outline: none; background: var(--bg);
+      transition: all 0.25s ease;
+      -webkit-user-select: none; user-select: none;
     }
+    .btn svg { width: 16px; height: 16px; flex-shrink: 0; transition: transform 0.35s var(--ease-spring); }
+    .btn:hover svg { transform: scale(1.12); }
+    .btn .ripple {
+      position: absolute; border-radius: 50%;
+      background: rgba(0,0,0,0.04);
+      transform: scale(0); animation: ripple-expand 0.6s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes ripple-expand { to { transform: scale(4); opacity: 0; } }
 
     .btn-primary {
-      background: var(--red);
-      color: var(--cream);
-      border: 2px solid var(--red-dark);
+      color: var(--text);
+      box-shadow: var(--neu-out);
     }
-
     .btn-primary:hover {
-      background: var(--red-dark);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(139, 37, 0, 0.3);
+      box-shadow: var(--neu-out-lg);
+      transform: translateY(-1px);
     }
+    .btn-primary:active { box-shadow: var(--neu-in); transform: translateY(0); transition-duration: 0.08s; }
 
-    .btn-primary:active {
-      transform: translateY(0);
+    .btn-accent {
+      background: var(--bg); color: var(--text); font-weight: 600;
+      box-shadow: var(--neu-out-lg);
     }
+    .btn-accent:hover {
+      box-shadow: var(--neu-out-xl);
+      transform: translateY(-1px);
+    }
+    .btn-accent:active { box-shadow: var(--neu-in); transform: translateY(0); transition-duration: 0.08s; }
+    .btn-accent .ripple { background: rgba(0,0,0,0.05); }
 
     .btn-secondary {
-      background: transparent;
-      color: var(--cream);
-      border: 1px solid var(--cream);
-      margin-top: 1rem;
+      color: var(--text-secondary);
+      box-shadow: var(--neu-out);
     }
-
     .btn-secondary:hover {
-      background: var(--cream);
-      color: var(--ink);
-    }
-
-    /* Received recommendation display */
-    .recommendation {
-      text-align: center;
-    }
-
-    .book-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      line-height: 1.3;
-    }
-
-    .book-reason {
-      font-size: 1.15rem;
-      font-style: italic;
-      line-height: 1.7;
-      margin-bottom: 1.5rem;
-    }
-
-    .recommendation-meta {
-      font-size: 0.85rem;
-      color: var(--ink-light);
-      padding-top: 1rem;
-      border-top: 1px solid var(--ink-light);
-    }
-
-    .btn-amazon {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      font-family: 'IM Fell English', serif;
-      font-size: 1rem;
-      color: var(--ink);
-      background: var(--gold);
-      border: 1px solid #a08930;
-      text-decoration: none;
-      margin-bottom: 1.5rem;
-      transition: all 0.2s;
-    }
-
-    .btn-amazon:hover {
-      background: #d4b84a;
+      color: var(--text);
+      box-shadow: var(--neu-out-lg);
       transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(196, 167, 71, 0.3);
     }
+    .btn-secondary:active { box-shadow: var(--neu-in); transform: translateY(0); transition-duration: 0.08s; }
 
-    .btn-share {
-      background: var(--ink);
-      color: var(--gold);
-      border: 2px solid var(--gold);
+    .btn-ghost { color: var(--text-muted); box-shadow: none; background: transparent; }
+    .btn-ghost:hover { color: var(--text); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+
+    .divider {
+      display: flex; align-items: center; gap: 0.85rem;
+      color: var(--text-muted); font-size: 0.7rem; font-weight: 400;
+      letter-spacing: 0.1em;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--shadow-dark); opacity: 0.3; }
+
+    /* VIEWS */
+    .view { display: none; opacity: 0; transform: translateY(12px); }
+    .view.active { display: block; animation: view-enter 0.5s var(--ease-out) forwards; }
+    .view.exiting { display: block; animation: view-exit 0.25s ease-in forwards; }
+    @keyframes view-enter { from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes view-exit { from{opacity:1;transform:translateY(0);} to{opacity:0;transform:translateY(-10px);} }
+
+    /* CARD */
+    .card {
+      background: var(--bg); border-radius: var(--radius);
+      box-shadow: var(--neu-out-lg); padding: 2rem; margin-bottom: 1.25rem;
+      transition: box-shadow 0.3s;
+    }
+    .card:hover { box-shadow: var(--neu-out-xl); }
+    .card-label { font-family: var(--font-display); font-size: 1.5rem; font-weight: 500; margin-bottom: 0.3rem; }
+    .card-sublabel { font-size: 0.82rem; color: var(--text-muted); font-weight: 400; margin-bottom: 1.5rem; }
+
+    /* FORM */
+    .input-group { margin-bottom: 1.15rem; position: relative; }
+    .input-group label {
+      display: block; font-size: 0.65rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted);
       margin-bottom: 0.5rem;
     }
-
-    .btn-share:hover {
-      background: var(--gold);
-      color: var(--ink);
+    .input-well {
+      background: var(--bg); border-radius: var(--radius-pill);
+      box-shadow: var(--neu-in); padding: 0.85rem 1.25rem;
+      transition: box-shadow 0.3s ease;
     }
-
-    .share-buttons {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
+    .input-well:focus-within { box-shadow: var(--neu-in), 0 0 0 2px rgba(0,0,0,0.04); }
+    .input-well-area { border-radius: var(--radius-sm); }
+    .input-well input, .input-well textarea {
+      width: 100%; border: none; outline: none; background: transparent;
+      font-family: var(--font-body); font-size: 0.92rem;
+      color: var(--text); line-height: 1.5; resize: none;
     }
-
-    .share-buttons .btn-share {
-      flex: 1;
-      margin-bottom: 0;
+    .input-well input::placeholder, .input-well textarea::placeholder { color: var(--text-muted); font-weight: 300; }
+    .char-count {
+      position: absolute; bottom: 0.5rem; right: 1rem;
+      font-size: 0.6rem; color: var(--text-muted); font-weight: 400;
+      font-variant-numeric: tabular-nums; z-index: 1;
     }
+    .char-count.near-limit { color: #b8860b; }
+    .char-count.at-limit { color: #c1272d; }
+    .submit-footer { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+    .submit-footer .btn { flex: 1; }
 
+    /* LOADING */
+    .loading-center { text-align: center; padding: 4rem 0; }
+    .loader-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 1.5rem; }
+    .loader-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--bg); box-shadow: var(--neu-out-sm);
+      animation: dot-bounce 1.4s ease-in-out infinite;
+    }
+    .loader-dot:nth-child(1) { animation-delay: 0s; }
+    .loader-dot:nth-child(2) { animation-delay: 0.15s; }
+    .loader-dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes dot-bounce { 0%,80%,100% { transform:translateY(0); box-shadow: var(--neu-out-sm); } 40% { transform:translateY(-10px); box-shadow: var(--neu-in-sm); } }
+    .loading-label { font-weight: 300; color: var(--text-muted); font-size: 0.9rem; }
+
+    /* RESULT */
+    .result-card { padding: 2.5rem 2rem; }
+    .result-eyebrow {
+      font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.15em; color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .result-title { font-family: var(--font-display); font-size: 2rem; line-height: 1.2; margin-bottom: 1rem; font-weight: 500; }
+    .result-cover-wrap { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+    .result-cover {
+      width: 130px; height: auto; max-height: 200px; object-fit: cover;
+      border-radius: 4px;
+      box-shadow: var(--neu-out);
+      transition: transform 0.4s var(--ease-spring), box-shadow 0.4s ease;
+    }
+    .result-cover:hover { transform: translateY(-4px) rotate(-1deg); box-shadow: var(--neu-out-lg); }
+    .result-reason {
+      font-weight: 300; font-size: 0.95rem; line-height: 1.7;
+      color: var(--text-secondary); font-style: italic;
+      margin-bottom: 1.5rem; padding-left: 1rem;
+      border-left: 2px solid var(--shadow-dark);
+    }
+    .result-meta { font-size: 0.72rem; color: var(--text-muted); font-weight: 300; }
+    .result-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.85rem; }
+    .result-actions--full { grid-template-columns: 1fr; }
+
+    /* CONFIRMATION */
+    .confirmation { text-align: center; padding: 2.5rem 2rem; }
+    .confirmation-check {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--bg); box-shadow: var(--neu-out);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+      animation: pop-in 0.5s var(--ease-spring) forwards; transform: scale(0);
+    }
+    @keyframes pop-in { 0%{transform:scale(0);} 60%{transform:scale(1.1);} 100%{transform:scale(1);} }
+    .confirmation-check svg { width: 28px; height: 28px; color: var(--text); stroke-dasharray:40; stroke-dashoffset:40; animation: check-draw 0.6s ease 0.3s forwards; }
+    @keyframes check-draw { to { stroke-dashoffset: 0; } }
+    .confirmation h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 500; margin-bottom: 0.75rem; animation: fade-up 0.4s var(--ease-out) 0.2s both; }
+    .confirmation p { font-weight: 300; color: var(--text-secondary); line-height: 1.6; margin-bottom: 2rem; animation: fade-up 0.4s var(--ease-out) 0.35s both; }
+    .confirmation .btn { animation: fade-up 0.4s var(--ease-out) 0.5s both; }
+    @keyframes fade-up { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+
+    /* COUNT / REPORT / TOAST / FOOTER */
+    .count-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.9rem; border-radius: var(--radius-pill);
+      background: var(--bg); box-shadow: var(--neu-in-sm);
+      font-size: 0.68rem; color: var(--text-muted); font-weight: 400;
+    }
+    .report-btn { background:none; border:none; color:var(--text-muted); font-size:0.68rem; font-family:var(--font-body); cursor:pointer; padding:0.5rem; opacity:0.5; transition:all 0.2s; }
+    .report-btn:hover { opacity:1; }
     .toast {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--ink);
-      color: var(--gold);
-      padding: 1rem 2rem;
-      border: 1px solid var(--gold);
-      font-family: 'IM Fell English', serif;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 1001;
+      position:fixed; bottom:2rem; left:50%;
+      transform:translateX(-50%) translateY(80px) scale(0.9);
+      background:var(--text); color:var(--bg);
+      padding:0.85rem 1.5rem; border-radius:var(--radius-pill);
+      font-size:0.82rem; font-weight:400; z-index:200;
+      opacity:0; transition:all 0.45s var(--ease-spring);
+      pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,0.15);
     }
+    .toast.show { transform:translateX(-50%) translateY(0) scale(1); opacity:1; }
+    footer { text-align:center; padding:1.5rem 0 3rem; font-size:0.68rem; }
+    footer p { color: var(--text-muted); }
+    footer a { color:var(--text-secondary); text-decoration:none; text-shadow:none; }
+    footer a:hover { color:var(--text); }
 
-    .toast.show {
-      opacity: 1;
-    }
-
-    .btn-report {
-      display: block;
-      width: 100%;
-      padding: 0.5rem;
-      margin-top: 1rem;
-      background: none;
-      border: none;
-      color: var(--ink-light);
-      font-family: 'IM Fell English', serif;
-      font-size: 0.85rem;
-      cursor: pointer;
-      opacity: 0.6;
-      transition: opacity 0.2s;
-    }
-
-    .btn-report:hover {
-      opacity: 1;
-      color: var(--red);
-    }
-
-    .btn-report.reported {
-      opacity: 0.4;
-      cursor: default;
-      color: var(--ink-light);
-    }
-
-    /* States */
-    .view {
-      display: none;
-    }
-
-    .view.active {
-      display: block;
-      animation: fadeIn 0.5s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes paperSlide {
-      from {
-        opacity: 0;
-        transform: translateY(-30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .paper-emerge {
-      animation: paperSlide 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 2rem 0;
-      font-size: 0.85rem;
-      color: var(--wood-light);
-      font-style: italic;
-    }
-
-    footer a {
-      color: var(--gold);
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    /* Loading state */
-    .loading {
-      text-align: center;
-      padding: 3rem;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--paper);
-      border-top-color: var(--red);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* Intro text */
-    .intro {
-      text-align: center;
-      margin-bottom: 2rem;
-      line-height: 1.8;
-      font-size: 1.1rem;
-    }
-
-    .intro strong {
-      color: var(--gold);
-    }
-
-    /* Responsive */
-    @media (max-width: 480px) {
-      .logo {
-        font-size: 2.5rem;
-      }
-      
-      .logo::before,
-      .logo::after {
-        display: none;
-      }
-
-      .broadsheet {
-        padding: 1.5rem;
-      }
-
-      .book-title {
-        font-size: 1.5rem;
-      }
+    @media (max-width: 380px) {
+      .hero-text { font-size: 0.72rem; }
+      .card { padding: 1.5rem; }
     }
   </style>
 </head>
 <body>
+  <canvas id="letter-canvas"></canvas>
+  <canvas id="confetti-canvas"></canvas>
+
   <div class="container">
-    <header>
-      <h1 class="logo">Broadside</h1>
-      <p class="tagline">Book recommendations, pressed by strangers</p>
-      
-      <div class="press-illustration">
-        <svg class="press-svg" id="press-svg" viewBox="0 0 320 300">
-          <!-- ========== BASE AND FEET ========== -->
-          <!-- Left ornate leg -->
-          <path class="heavy" d="M50 280 Q30 280 25 265 Q22 250 30 240 L45 235 Q55 232 60 225 L60 215" />
-          <path class="medium" d="M35 275 Q30 270 32 262" />
-          <path class="detail" d="M40 270 Q38 265 40 258" />
-          <!-- Left leg scrollwork -->
-          <path class="detail" d="M28 255 Q22 250 28 245 Q34 240 28 235" />
-          <path class="fine" d="M32 252 Q28 248 32 244" />
-          
-          <!-- Right ornate leg -->
-          <path class="heavy" d="M270 280 Q290 280 295 265 Q298 250 290 240 L275 235 Q265 232 260 225 L260 215" />
-          <path class="medium" d="M285 275 Q290 270 288 262" />
-          <path class="detail" d="M280 270 Q282 265 280 258" />
-          <!-- Right leg scrollwork -->
-          <path class="detail" d="M292 255 Q298 250 292 245 Q286 240 292 235" />
-          <path class="fine" d="M288 252 Q292 248 288 244" />
-          
-          <!-- Floor line -->
-          <path class="medium" d="M20 282 L300 282" />
-          <path class="detail" d="M25 285 L295 285" />
-          
-          <!-- Base platform -->
-          <path class="heavy" d="M55 235 L265 235 L268 245 L52 245 Z" />
-          <path class="detail" d="M58 238 L262 238" />
-          <path class="detail" d="M56 242 L264 242" />
-          <!-- Base crosshatching -->
-          <path class="crosshatch" d="M70 236 L65 244" />
-          <path class="crosshatch" d="M90 236 L85 244" />
-          <path class="crosshatch" d="M110 236 L105 244" />
-          <path class="crosshatch" d="M130 236 L125 244" />
-          <path class="crosshatch" d="M150 236 L145 244" />
-          <path class="crosshatch" d="M170 236 L165 244" />
-          <path class="crosshatch" d="M190 236 L185 244" />
-          <path class="crosshatch" d="M210 236 L205 244" />
-          <path class="crosshatch" d="M230 236 L225 244" />
-          <path class="crosshatch" d="M250 236 L245 244" />
-          
-          <!-- ========== MAIN FRAME ========== -->
-          <!-- Left upright with Victorian curves -->
-          <path class="heavy" d="M60 215 L60 140 Q60 125 70 115 Q85 100 95 80" />
-          <path class="medium" d="M65 210 L65 145 Q65 132 73 122" />
-          <path class="detail" d="M58 180 Q52 175 58 170" />
-          <path class="detail" d="M58 160 Q52 155 58 150" />
-          
-          <!-- Right upright with Victorian curves -->
-          <path class="heavy" d="M260 215 L260 140 Q260 125 250 115 Q235 100 225 80" />
-          <path class="medium" d="M255 210 L255 145 Q255 132 247 122" />
-          <path class="detail" d="M262 180 Q268 175 262 170" />
-          <path class="detail" d="M262 160 Q268 155 262 150" />
-          
-          <!-- Cross beam with ornament -->
-          <path class="heavy" d="M65 155 L255 155" />
-          <path class="detail" d="M70 152 L250 152" />
-          <path class="detail" d="M70 158 L250 158" />
-          <!-- Beam center ornament -->
-          <circle cx="160" cy="155" r="8" class="medium" />
-          <circle cx="160" cy="155" r="4" class="detail" />
-          <circle cx="160" cy="155" r="1.5" class="fill-accent" />
-          
-          <!-- ========== INK DISK (left side) ========== -->
-          <circle cx="45" cy="120" r="32" class="heavy" />
-          <circle cx="45" cy="120" r="26" class="medium" />
-          <circle cx="45" cy="120" r="20" class="detail" />
-          <circle cx="45" cy="120" r="14" class="detail" />
-          <circle cx="45" cy="120" r="8" class="detail" />
-          <circle cx="45" cy="120" r="3" class="fill-accent" />
-          <!-- Ink disk spokes -->
-          <path class="fine" d="M45 90 L45 150" />
-          <path class="fine" d="M15 120 L75 120" />
-          <path class="fine" d="M24 99 L66 141" />
-          <path class="fine" d="M24 141 L66 99" />
-          <!-- Ink disk roller arm -->
-          <path class="medium" d="M72 105 L95 125 L100 140" />
-          <circle cx="72" cy="105" r="4" />
-          <circle cx="100" cy="140" r="5" />
-          <circle cx="100" cy="140" r="2" class="fill-accent" />
-          
-          <!-- ========== MAIN FLYWHEEL ========== -->
-          <circle cx="160" cy="75" r="35" class="heavy" />
-          <circle cx="160" cy="75" r="30" class="medium" />
-          <circle cx="160" cy="75" r="24" class="detail" />
-          <circle cx="160" cy="75" r="10" class="medium" />
-          <circle cx="160" cy="75" r="5" class="fill-dark" />
-          <circle cx="160" cy="75" r="2" class="fill-accent" />
-          <!-- Flywheel spokes (12) -->
-          <path class="detail" d="M160 45 L160 55" />
-          <path class="detail" d="M160 95 L160 105" />
-          <path class="detail" d="M130 75 L140 75" />
-          <path class="detail" d="M180 75 L190 75" />
-          <path class="detail" d="M139 54 L146 61" />
-          <path class="detail" d="M174 89 L181 96" />
-          <path class="detail" d="M181 54 L174 61" />
-          <path class="detail" d="M146 89 L139 96" />
-          <path class="fine" d="M145 49 L150 56" />
-          <path class="fine" d="M170 94 L175 101" />
-          <path class="fine" d="M175 49 L170 56" />
-          <path class="fine" d="M150 94 L145 101" />
-          <!-- Flywheel rim detail -->
-          <path class="fine" d="M160 42 Q165 42 168 45" />
-          <path class="fine" d="M160 108 Q155 108 152 105" />
-          
-          <!-- ========== ROCKER ARM MECHANISM ========== -->
-          <path class="heavy" d="M95 80 Q130 65 160 65 Q190 65 225 80" />
-          <path class="detail" d="M100 77 Q130 63 160 63 Q190 63 220 77" />
-          
-          <!-- Connecting rods with joints -->
-          <path class="medium" d="M115 85 L90 140" />
-          <path class="medium" d="M205 85 L230 140" />
-          <circle cx="115" cy="85" r="4" />
-          <circle cx="205" cy="85" r="4" />
-          <circle cx="90" cy="140" r="5" />
-          <circle cx="230" cy="140" r="5" />
-          <circle cx="115" cy="85" r="1.5" class="fill-accent" />
-          <circle cx="205" cy="85" r="1.5" class="fill-accent" />
-          <circle cx="90" cy="140" r="2" class="fill-accent" />
-          <circle cx="230" cy="140" r="2" class="fill-accent" />
-          
-          <!-- ========== PLATEN (pressing surface) ========== -->
-          <path class="heavy" d="M80 165 L240 165 L250 215 L70 215 Z" />
-          <path class="medium" d="M85 172 L235 172" />
-          <path class="detail" d="M83 180 L237 180" />
-          <path class="detail" d="M80 190 L240 190" />
-          <path class="detail" d="M75 200 L245 200" />
-          <path class="detail" d="M72 210 L248 210" />
-          <!-- Platen crosshatching for depth -->
-          <path class="crosshatch" d="M95 166 L88 214" />
-          <path class="crosshatch" d="M115 166 L108 214" />
-          <path class="crosshatch" d="M135 166 L128 214" />
-          <path class="crosshatch" d="M155 166 L148 214" />
-          <path class="crosshatch" d="M175 166 L168 214" />
-          <path class="crosshatch" d="M195 166 L188 214" />
-          <path class="crosshatch" d="M215 166 L208 214" />
-          <path class="crosshatch" d="M235 166 L228 214" />
-          
-          <!-- Paper bed/chase -->
-          <path class="heavy" d="M75 218 L245 218 L248 232 L72 232 Z" />
-          <path class="detail" d="M80 222 L240 222" />
-          <path class="detail" d="M78 228 L242 228" />
-          
-          <!-- ========== LEVER GROUP (animated) ========== -->
-          <g class="lever-group">
-            <!-- Main lever arm with taper -->
-            <path class="heavy accent" d="M245 140 Q252 110 255 80 Q258 55 262 35 Q265 20 270 10" />
-            <path class="medium accent" d="M242 138 Q248 110 252 82" />
-            <!-- Lever decorative curves -->
-            <path class="detail accent" d="M250 100 Q255 98 252 92" />
-            <path class="detail accent" d="M255 70 Q260 68 257 62" />
-            <!-- Lever handle (ball grip) -->
-            <ellipse cx="272" cy="8" rx="12" ry="7" class="accent heavy" />
-            <ellipse cx="272" cy="8" rx="8" ry="4" class="detail accent" />
-            <path class="fine accent" d="M264 6 Q272 2 280 6" />
-            <circle cx="272" cy="8" r="2" class="fill-accent" />
-            <!-- Lever pivot mechanism -->
-            <circle cx="245" cy="140" r="8" class="heavy" />
-            <circle cx="245" cy="140" r="5" class="medium" />
-            <circle cx="245" cy="140" r="2.5" class="fill-accent" />
-          </g>
-          
-          <!-- ========== DECORATIVE ELEMENTS ========== -->
-          <!-- Victorian scrollwork on frame -->
-          <path class="detail" d="M60 200 Q50 195 55 185 Q60 180 55 175" />
-          <path class="detail" d="M260 200 Q270 195 265 185 Q260 180 265 175" />
-          
-          <!-- Small ornamental bolts -->
-          <circle cx="60" cy="170" r="2" class="fill-dark" />
-          <circle cx="60" cy="190" r="2" class="fill-dark" />
-          <circle cx="260" cy="170" r="2" class="fill-dark" />
-          <circle cx="260" cy="190" r="2" class="fill-dark" />
-          <circle cx="80" cy="232" r="2" class="fill-dark" />
-          <circle cx="240" cy="232" r="2" class="fill-dark" />
-          
-          <!-- Type chase detail (where letters go) -->
-          <rect x="110" y="185" width="100" height="25" rx="2" class="detail" />
-          <path class="fine" d="M115 190 L205 190" />
-          <path class="fine" d="M115 195 L205 195" />
-          <path class="fine" d="M115 200 L205 200" />
-          <path class="fine" d="M115 205 L205 205" />
-        </svg>
-      </div>
-    </header>
+    <header><span class="logo-text">Broadside</span></header>
 
-    <main>
-      <!-- Home View -->
-      <div class="view active" id="home-view">
-        <p class="intro">
-          Share a book that moved you.<br>
-          <strong>Receive one from a stranger.</strong><br>
-          No algorithms. No profiles. Just ink and intention.
-        </p>
-        
-        <button class="btn btn-primary" onclick="showView('submit-view')">
-          Set Your Type
-        </button>
-        <button class="btn btn-secondary" onclick="findRecommendation()">
-          Pull a Broadside
-        </button>
-      </div>
-
-      <!-- Submit View -->
-      <div class="view" id="submit-view">
-        <div class="broadsheet">
-          <div class="broadsheet-header">
-            <div class="broadsheet-title">Set Your Type</div>
-            <div class="broadsheet-date">A book worth sharing</div>
-          </div>
-          
-          <form id="submit-form" onsubmit="submitRecommendation(event)">
-            <div class="form-group">
-              <label for="book-title">The Book</label>
-              <input 
-                type="text" 
-                id="book-title" 
-                name="title" 
-                placeholder="Title & Author"
-                required
-                maxlength="150"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label for="book-reason">Why It Matters</label>
-              <textarea 
-                id="book-reason" 
-                name="reason" 
-                placeholder="In one breath, tell a stranger why..."
-                required
-                maxlength="280"
-                oninput="updateCharCount(this)"
-              ></textarea>
-              <div class="char-count"><span id="char-count">0</span> / 280</div>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">
-              Pull the Press
-            </button>
-          </form>
+    <!-- HOME -->
+    <div id="home-view" class="view active">
+      <div class="hero">
+        <div class="hero-text">
+          Share a <span class="ink">b</span>ook that<br>
+          changed y<span class="ink">o</span>u.<br>
+          Get <span class="ink">o</span>ne bac<span class="ink">k</span><br>
+          from a <span class="ink">s</span>tranger.
         </div>
-        
-        <button class="btn btn-secondary" onclick="showView('home-view')">
-          ← Back
-        </button>
-      </div>
 
-      <!-- Loading View -->
-      <div class="view" id="loading-view">
-        <div class="loading">
-          <div class="spinner"></div>
-          <p>Pulling the press...</p>
+        <p class="hero-sub">One book. One sentence explaining why. Toss it into the press, pull one out.</p>
+
+        <div class="traits">
+          <span class="trait"><span class="ink-dot"></span>No accounts</span>
+          <span class="trait"><span class="ink-dot"></span>No algorithms</span>
+          <span class="trait"><span class="ink-dot"></span>Anonymous</span>
         </div>
       </div>
 
-      <!-- Result View -->
-      <div class="view" id="result-view">
-        <div class="broadsheet paper-emerge" id="result-paper">
-          <div class="broadsheet-header">
-            <div class="broadsheet-title">A Broadside for You</div>
-            <div class="broadsheet-date" id="result-date"></div>
-          </div>
-          
-          <div class="recommendation">
-            <h2 class="book-title" id="result-title"></h2>
-            <p class="book-reason" id="result-reason"></p>
-            <a href="#" id="amazon-link" class="btn-amazon" target="_blank" rel="noopener noreferrer">
-              Find This Book →
-            </a>
-            <p class="recommendation-meta">
-              Pressed by a stranger, found by you.
-            </p>
-          </div>
-          <button class="btn-report" onclick="handleReport()" id="report-btn">
-            ⚑ Report this recommendation
-          </button>
-        </div>
-        
-        <div class="share-buttons">
-          <button class="btn btn-share" onclick="generateShareCard()">
-            ⬇ Download Image
-          </button>
-          <button class="btn btn-share" onclick="copyLink()">
-            🔗 Copy Link
-          </button>
-        </div>
-        <button class="btn btn-primary" onclick="showView('submit-view')">
-          Share Your Own
+      <div class="actions">
+        <button class="btn btn-accent" onclick="goTo('receive-loading')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Read a stranger's recommendation
         </button>
-        <button class="btn btn-secondary" onclick="findRecommendation()">
-          Find Another
+        <div class="divider">or</div>
+        <button class="btn btn-secondary" onclick="goTo('submit-view')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          Share a recommendation
         </button>
+        <div style="text-align:center;margin-top:0.35rem;">
+          <div class="count-badge"><span id="rec-count">—</span> recommendations in the press</div>
+        </div>
       </div>
-      
-      <!-- Hidden canvas for image generation -->
-      <canvas id="share-canvas" style="display: none;"></canvas>
-      
-      <!-- Toast notification -->
-      <div class="toast" id="toast">Link copied!</div>
+    </div>
 
-      <!-- Thank You View -->
-      <div class="view" id="thankyou-view">
-        <div class="broadsheet paper-emerge">
-          <div class="broadsheet-header">
-            <div class="broadsheet-title">Pressed & Sent</div>
-            <div class="broadsheet-date">Your recommendation awaits a stranger</div>
-          </div>
-          
-          <div class="recommendation">
-            <p class="book-reason">
-              Your book has been added to the press. Somewhere, someone will discover it and perhaps it will change their afternoon, their week, their life.
-            </p>
-          </div>
+    <!-- SUBMIT -->
+    <div id="submit-view" class="view">
+      <div class="card">
+        <div class="card-label">Set your type</div>
+        <div class="card-sublabel">One book. One reason. That's all it takes.</div>
+        <div class="input-group">
+          <label for="book-title">Book title</label>
+          <div class="input-well"><input type="text" id="book-title" placeholder="e.g. Stoner by John Williams" maxlength="150" autocomplete="off"></div>
         </div>
-        
-        <button class="btn btn-primary" onclick="findRecommendation()">
-          Pull a Broadside
-        </button>
-        <button class="btn btn-secondary" onclick="showView('home-view')">
-          ← Home
-        </button>
+        <div class="input-group" style="position:relative;">
+          <label for="book-reason">Why this book?</label>
+          <div class="input-well input-well-area"><textarea id="book-reason" rows="3" placeholder="One sentence. Make a stranger care." maxlength="280"></textarea></div>
+          <span class="char-count" id="reason-count">0 / 280</span>
+        </div>
+        <div class="submit-footer">
+          <button class="btn btn-ghost" onclick="goTo('home-view')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="m15 18-6-6 6-6"/></svg>Back</button>
+          <button class="btn btn-accent" id="submit-btn" onclick="submitRecommendation()" disabled>Pull the Press</button>
+        </div>
       </div>
-    </main>
+    </div>
+
+    <!-- LOADING -->
+    <div id="receive-loading" class="view"><div class="loading-center"><div class="loader-dots"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div><div class="loading-label">Pulling from the press…</div></div></div>
+    <div id="submit-loading" class="view"><div class="loading-center"><div class="loader-dots"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div><div class="loading-label">Setting your type…</div></div></div>
+
+    <!-- RESULT -->
+    <div id="result-view" class="view">
+      <div class="card result-card">
+        <div class="result-eyebrow">Your Broadside</div>
+        <div class="result-cover-wrap" id="result-cover-wrap" style="display:none;"><img id="result-cover" class="result-cover" alt="Book cover"></div>
+        <h2 class="result-title" id="result-title"></h2>
+        <p class="result-reason" id="result-reason"></p>
+        <div class="result-meta" id="result-date"></div>
+      </div>
+      <div class="result-actions">
+        <a href="#" id="amazon-link" target="_blank" class="btn btn-accent" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Find this book</a>
+        <button class="btn btn-secondary" onclick="copyLink()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copy link</button>
+      </div>
+      <div class="result-actions result-actions--full"><button class="btn btn-secondary" onclick="downloadShareCard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download share card</button></div>
+      <div class="result-actions result-actions--full"><button class="btn btn-primary" onclick="goTo('home-view')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Back to the press</button></div>
+      <div style="text-align:center;margin-top:0.25rem;"><button class="report-btn" onclick="reportRecommendation()">Report this recommendation</button></div>
+    </div>
+
+    <!-- CONFIRMATION -->
+    <div id="confirm-view" class="view">
+      <div class="card confirmation">
+        <div class="confirmation-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <h2>Recommendation set</h2>
+        <p>Your book is now in the press, waiting for a stranger to pull&nbsp;it.</p>
+        <button class="btn btn-accent" onclick="goTo('home-view')">Back to the press</button>
+      </div>
+    </div>
 
     <footer>
-      Made with care for readers everywhere
+      <p>No accounts · No algorithms · Just books between strangers</p>
+      <p style="margin-top:0.4rem;"><a href="https://broadside.press">broadside.press</a></p>
     </footer>
   </div>
 
+  <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
   <script>
-    // =====================
-    // CONFIGURATION
-    // =====================
-    
-    // Set to false once Supabase is configured
     const USE_DEMO_MODE = false;
-    
-    // Supabase credentials
     const SUPABASE_URL = 'https://gjvdduktsfgnzwovsdib.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdmRkdWt0c2Znbnp3b3ZzZGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MzA5MjEsImV4cCI6MjA4NTIwNjkyMX0.LjUNh1MTLsevRW1ZdOHHX_YQ7Y08tonZNoZyXUiDyQo';
-    
-    // Amazon Associates tag - replace with your tag
     const AMAZON_AFFILIATE_TAG = 'kalhalla-21';
-    
-    // Supabase client - only loaded when not in demo mode
-    let supabaseClient = null;
-    
-    // Initialize Supabase client
-    function initSupabase() {
-      if (!USE_DEMO_MODE && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-        try {
-          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-          console.log('Supabase initialized successfully');
-        } catch (e) {
-          console.error('Supabase failed to initialize:', e);
-        }
-      }
-    }
-    
-    // =====================
-    // DEMO DATA
-    // =====================
-    
-    const seedRecommendations = [
-      {
-        title: "The Master and Margarita by Mikhail Bulgakov",
-        reason: "It taught me that the devil might be the only honest character in any story, and that love can chase you across centuries if it's stubborn enough.",
-        created_at: "2025-12-28"
-      },
-      {
-        title: "Piranesi by Susanna Clarke",
-        reason: "A book about finding beauty in imprisonment, and the terrifying moment when you realize the walls you've memorized might be a cage.",
-        created_at: "2025-12-29"
-      },
-      {
-        title: "The Remains of the Day by Kazuo Ishiguro",
-        reason: "The quietest devastation I've ever read. A man realizes too late that dignity was a cage he built around himself.",
-        created_at: "2025-12-30"
-      },
-      {
-        title: "Blood Meridian by Cormac McCarthy",
-        reason: "Violence as poetry. It ruined me for a week and I'm still not sure I've recovered. The Judge will haunt your dreams.",
-        created_at: "2025-12-27"
-      },
-      {
-        title: "A Wizard of Earthsea by Ursula K. Le Guin",
-        reason: "The only book that made me understand that running from yourself is the real magic, and the only spell worth learning is your own true name.",
-        created_at: "2025-12-25"
-      },
-      {
-        title: "Giovanni's Room by James Baldwin",
-        reason: "Shame and desire, tangled so tight you can't tell them apart. Baldwin writes sentences that feel like confessions.",
-        created_at: "2025-12-26"
-      },
-      {
-        title: "Project Hail Mary by Andy Weir",
-        reason: "Pure joy disguised as hard science fiction. I laughed, I cried, I immediately started it again.",
-        created_at: "2025-12-24"
-      },
-      {
-        title: "Circe by Madeline Miller",
-        reason: "A witch on an island, learning that loneliness can be power if you let it transform you instead of break you.",
-        created_at: "2025-12-23"
-      }
+    let supabase;
+    if (!USE_DEMO_MODE && typeof window.supabase !== 'undefined') supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let userFingerprint = '';
+    let currentRecommendation = null;
+    const COLOURS = ['#1a1a1a','#444','#777','#aaa','#555'];
+
+    const BLOCKED_PATTERNS = [/\bf+u+c+k+/i,/\bs+h+i+t+/i,/\ba+s+s+h+o+l+e/i,/\bb+i+t+c+h/i,/\bd+i+c+k/i,/\bc+u+n+t/i,/\bn+i+g+g/i,/\bf+a+g+/i,/\bk+i+l+l\s*(your|my|ur)self/i,/\bk+y+s\b/i,/\br+e+t+a+r+d/i,/\btr+a+n+n/i];
+    function containsProfanity(t) { return BLOCKED_PATTERNS.some(p => p.test(t)); }
+
+    const DEMO_RECS = [
+      { id:1, title:"Stoner by John Williams", reason:"A quiet life, perfectly told. It will change what you think a novel can do.", created_at:"2024-11-15T10:00:00Z" },
+      { id:2, title:"Piranesi by Susanna Clarke", reason:"Like discovering a door in your house you never noticed, leading somewhere impossible and beautiful.", created_at:"2024-11-14T15:30:00Z" },
+      { id:3, title:"Man's Search for Meaning by Viktor Frankl", reason:"Written in a concentration camp. If he could find meaning there, you can find it anywhere.", created_at:"2024-11-13T09:00:00Z" },
+      { id:4, title:"The Master and Margarita by Mikhail Bulgakov", reason:"The Devil visits Soviet Moscow. Somehow both hilarious and devastating.", created_at:"2024-11-12T18:00:00Z" },
+      { id:5, title:"Educated by Tara Westover", reason:"A survivalist childhood in Idaho, then Cambridge. The gap between those worlds is the whole book.", created_at:"2024-11-11T12:00:00Z" },
+      { id:6, title:"The Remains of the Day by Kazuo Ishiguro", reason:"An English butler drives through the countryside and realises he wasted his life. Devastating in the gentlest way.", created_at:"2024-11-10T08:00:00Z" },
+      { id:7, title:"Flowers for Algernon by Daniel Keyes", reason:"You will cry. Everyone cries. It earns every tear.", created_at:"2024-11-09T14:00:00Z" },
+      { id:8, title:"Sapiens by Yuval Noah Harari", reason:"Reframes everything you thought you knew about being human. Read it before forming another opinion.", created_at:"2024-11-08T11:00:00Z" },
     ];
-
-    // =====================
-    // STATE
-    // =====================
-    
-    let userFingerprint = null;
-
-    // =====================
-    // FUNCTIONS
-    // =====================
 
     function generateFingerprint() {
-      // Simple fingerprint based on localStorage
-      let fp = localStorage.getItem('broadside_fingerprint');
-      if (!fp) {
-        fp = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now();
-        localStorage.setItem('broadside_fingerprint', fp);
-      }
-      return fp;
+      const n=navigator,s=window.screen;
+      const r=[n.userAgent,n.language,s.width,s.height,s.colorDepth,new Date().getTimezoneOffset(),n.hardwareConcurrency||'',n.maxTouchPoints||''].join('|');
+      let h=0;for(let i=0;i<r.length;i++){h=((h<<5)-h)+r.charCodeAt(i);h|=0;}return 'fp_'+Math.abs(h).toString(36);
     }
 
-    function getStoredRecommendations() {
-      const stored = localStorage.getItem('broadside_recommendations');
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      // Initialize with seed data
-      localStorage.setItem('broadside_recommendations', JSON.stringify(seedRecommendations));
-      return seedRecommendations;
-    }
+    /* ---- FLOATING LETTER PARTICLES ---- */
+    const lC=document.getElementById('letter-canvas'), lX=lC.getContext('2d');
+    let letters=[];
+    const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    // =====================
-    // CONTENT MODERATION
-    // =====================
-
-    // Blocked terms — slurs, hate speech, explicit content
-    // Using partial patterns to catch variations (plurals, suffixes, leetspeak)
-    const BLOCKED_PATTERNS = [
-      // Racial slurs
-      /\bn[i1!|]gg/i, /\bk[i1!|]ke/i, /\bsp[i1!|]c[ks]?\b/i, /\bch[i1!|]nk/i,
-      /\bwet\s*back/i, /\bcoon[s]?\b/i, /\bdarkie/i, /\bgook/i, /\bslant.?eye/i,
-      /\btowel\s*head/i, /\brag\s*head/i, /\bsand.?n[i1!|]g/i, /\bcamel.?jockey/i,
-      /\bbeaner/i, /\bgringo/i, /\bpaki\b/i, /\bwog[s]?\b/i,
-      // Homophobic/transphobic slurs  
-      /\bf[a@4]g[gs]?[o0]?t?/i, /\bdyke[s]?\b/i, /\btr[a@4]nn/i, /\bshemale/i,
-      // Misogynistic slurs
-      /\bcunt[s]?\b/i, /\bwh[o0]re[s]?\b/i, /\bslut[s]?\b/i,
-      // Antisemitic
-      /\bheeb/i, /\bjew.?boy/i, /\bholo.?hoax/i,
-      // General hate/violence
-      /\bkill\s*(all|every|the)\b/i, /\bgas\s*the/i, /\bheil\s*h/i,
-      /\b(white|black)\s*power\b/i, /\bethnic\s*cleans/i,
-      /\brape[ds]?\b/i, /\bmolest/i,
-      // Explicit sexual content
-      /\bporn/i, /\bhentai/i, /\bxxx\b/i, /\bjizz/i, /\bcum\s*dump/i,
-      /\bf[u\*]ck\s*(you|off|this)/i,
-    ];
-
-    // Common spam patterns
-    const SPAM_PATTERNS = [
-      /https?:\/\//i,           // URLs
-      /\b(buy|sale|discount|free money|crypto|bitcoin|nft)\b/i,
-      /(.)\1{4,}/,              // Repeated characters (aaaaaaa)
-      /\b(dm me|whatsapp|telegram)\b/i,
-    ];
-
-    function containsBlockedContent(text) {
-      const combined = text.toLowerCase();
-      for (const pattern of BLOCKED_PATTERNS) {
-        if (pattern.test(combined)) return { blocked: true, reason: 'inappropriate' };
-      }
-      for (const pattern of SPAM_PATTERNS) {
-        if (pattern.test(combined)) return { blocked: true, reason: 'spam' };
-      }
-      return { blocked: false };
-    }
-
-    async function reportRecommendation(title, reason) {
-      if (!supabaseClient) return;
-      
-      try {
-        await supabaseClient
-          .from('reports')
-          .insert([{
-            recommendation_title: title,
-            recommendation_reason: reason,
-            reported_by: userFingerprint,
-            reported_at: new Date().toISOString()
-          }]);
-      } catch (e) {
-        console.error('Report failed:', e);
-      }
-    }
-
-    async function handleReport() {
-      const btn = document.getElementById('report-btn');
-      if (btn.classList.contains('reported')) return;
-      
-      const title = document.getElementById('result-title').textContent;
-      const reason = document.getElementById('result-reason').textContent;
-      
-      await reportRecommendation(title, reason);
-      
-      btn.textContent = '✓ Reported — thank you';
-      btn.classList.add('reported');
-      
-      // Show toast
-      const toast = document.getElementById('toast');
-      toast.textContent = 'Reported. Thank you for helping keep Broadside safe.';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
-    }
-
-    async function saveRecommendation(title, reason) {
-      // Check for blocked content before saving
-      const titleCheck = containsBlockedContent(title);
-      const reasonCheck = containsBlockedContent(reason);
-      
-      if (titleCheck.blocked || reasonCheck.blocked) {
-        alert('Your submission could not be accepted. Please ensure your recommendation is respectful and book-related.');
-        showView('submit-view');
-        return null;
-      }
-
-      if (USE_DEMO_MODE) {
-        const recommendations = getStoredRecommendations();
-        const newRec = {
-          title: title,
-          reason: reason,
-          created_at: new Date().toISOString().split('T')[0],
-          fingerprint: userFingerprint
-        };
-        recommendations.push(newRec);
-        localStorage.setItem('broadside_recommendations', JSON.stringify(recommendations));
-        return newRec;
-      } else {
-        const { data, error } = await supabaseClient
-          .from('recommendations')
-          .insert([{ 
-            title: title, 
-            reason: reason, 
-            fingerprint: userFingerprint 
-          }])
-          .select();
-        
-        if (error) {
-          console.error('Error saving:', error);
-          return null;
-        }
-        return data[0];
-      }
-    }
-
-    // Track recently shown recommendations to avoid repeats
-    const recentlyShown = [];
-    const RECENT_LIMIT = 10;
-
-    async function getRandomRecommendation() {
-      if (USE_DEMO_MODE) {
-        const recommendations = getStoredRecommendations();
-        const available = recommendations.filter(r => r.fingerprint !== userFingerprint);
-        if (available.length === 0) {
-          return recommendations[Math.floor(Math.random() * recommendations.length)];
-        }
-        return available[Math.floor(Math.random() * available.length)];
-      } else {
-        // Check if supabase is initialized
-        if (!supabaseClient) {
-          console.error('Supabase not initialized');
-          alert('Connection error. Please refresh the page.');
-          return null;
-        }
-
-        // Use Supabase's built-in random ordering via PostgREST
-        // Fetch a small batch, randomly ordered, excluding user's own
-        let query = supabaseClient
-          .from('random_recommendations')
-          .select('*')
-          .neq('fingerprint', userFingerprint)
-          .limit(20);
-
-        let { data, error } = await query;
-        
-        // Fallback: if the view doesn't exist yet, query the table directly
-        if (error) {
-          console.warn('Random view not available, using table fallback');
-          const result = await supabaseClient
-            .from('recommendations')
-            .select('*')
-            .neq('fingerprint', userFingerprint);
-          data = result.data;
-          error = result.error;
-        }
-
-        if (error || !data || data.length === 0) {
-          console.error('Error fetching:', error);
-          // Last resort fallback — any recommendation
-          const { data: fallback } = await supabaseClient
-            .from('recommendations')
-            .select('*')
-            .limit(50);
-          if (fallback && fallback.length > 0) {
-            return fallback[Math.floor(Math.random() * fallback.length)];
-          }
-          return null;
-        }
-
-        // Filter out recently shown titles
-        let fresh = data.filter(r => !recentlyShown.includes(r.title));
-        
-        // If everything's been shown recently, reset and use full set
-        if (fresh.length === 0) {
-          recentlyShown.length = 0;
-          fresh = data;
-        }
-
-        const pick = fresh[Math.floor(Math.random() * fresh.length)];
-        
-        // Track this recommendation
-        recentlyShown.push(pick.title);
-        if (recentlyShown.length > RECENT_LIMIT) {
-          recentlyShown.shift();
-        }
-
-        return pick;
-      }
-    }
-
-    function generateAmazonLink(bookTitle) {
-      // Extract just the book title (remove author if present)
-      const searchTerm = encodeURIComponent(bookTitle);
-      return `https://www.amazon.co.uk/s?k=${searchTerm}&tag=${AMAZON_AFFILIATE_TAG}`;
-    }
-
-    function copyLink() {
-      const url = window.location.origin || 'https://broadside.press';
-      navigator.clipboard.writeText(url).then(() => {
-        const toast = document.getElementById('toast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
-      }).catch(() => {
-        // Fallback for older browsers
-        const input = document.createElement('input');
-        input.value = url;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        document.body.removeChild(input);
-        
-        const toast = document.getElementById('toast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
+    function initLetters(){
+      lC.width=window.innerWidth;lC.height=window.innerHeight;letters=[];
+      const count=Math.min(30,Math.floor((lC.width*lC.height)/35000));
+      for(let i=0;i<count;i++) letters.push({
+        x:Math.random()*lC.width, y:Math.random()*lC.height,
+        vx:(Math.random()-0.5)*0.15, vy:(Math.random()-0.5)*0.15,
+        char:ALPHABET[Math.floor(Math.random()*ALPHABET.length)],
+        size:12+Math.random()*18,
+        alpha:0.03+Math.random()*0.04,
+        rot:(Math.random()-0.5)*0.3,
+        ph:Math.random()*Math.PI*2,
+        serif:Math.random()>0.5,
       });
     }
+    function drawLetters(){
+      lX.clearRect(0,0,lC.width,lC.height);
+      const t=Date.now()*0.0005;
+      for(const l of letters){
+        l.x+=l.vx; l.y+=l.vy;
+        if(l.x<-30)l.x=lC.width+30; if(l.x>lC.width+30)l.x=-30;
+        if(l.y<-30)l.y=lC.height+30; if(l.y>lC.height+30)l.y=-30;
+        const a = l.alpha + Math.sin(t*2+l.ph)*0.015;
+        lX.save();
+        lX.translate(l.x,l.y);
+        lX.rotate(l.rot);
+        lX.font=(l.serif?'':'500 ')+l.size+'px '+(l.serif?'"EB Garamond",Georgia,serif':'"Space Grotesk",sans-serif');
+        lX.fillStyle='#1a1a1a';
+        lX.globalAlpha=Math.max(0,a);
+        lX.textAlign='center';
+        lX.textBaseline='middle';
+        lX.fillText(l.char,0,0);
+        lX.restore();
+      }
+      requestAnimationFrame(drawLetters);
+    }
+    window.addEventListener('resize',initLetters);
+    initLetters(); drawLetters();
 
-    async function generateShareCard() {
-      const canvas = document.getElementById('share-canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Card dimensions (Instagram-friendly 1080x1350)
-      const width = 1080;
-      const height = 1350;
-      canvas.width = width;
-      canvas.height = height;
-      
-      // Colors
-      const cream = '#f4f1ea';
-      const ink = '#1a1614';
-      const inkLight = '#2a2420';
-      const red = '#8b2500';
-      const gold = '#c4a747';
-      
+    /* ---- CONFETTI ---- */
+    const cC=document.getElementById('confetti-canvas'),cX=cC.getContext('2d');
+    let confetti=[],confettiOn=false;
+    function resizeC(){cC.width=window.innerWidth;cC.height=window.innerHeight;}window.addEventListener('resize',resizeC);resizeC();
+    function fireConfetti(){
+      confetti=[];
+      for(let i=0;i<60;i++) confetti.push({ x:window.innerWidth/2+(Math.random()-0.5)*200,y:window.innerHeight*0.4, vx:(Math.random()-0.5)*14,vy:-Math.random()*16-4, r:Math.random()*5+2,c:['#1a1a1a','#666','#999','#bbb'][Math.floor(Math.random()*4)], rot:Math.random()*360,rv:(Math.random()-0.5)*10, life:1,decay:0.01+Math.random()*0.008, shape:Math.random()>0.5?'r':'c' });
+      confettiOn=true;drawC();
+    }
+    function drawC(){
+      if(!confettiOn)return;cX.clearRect(0,0,cC.width,cC.height);let alive=0;
+      for(const c of confetti){ if(c.life<=0)continue;alive++; c.x+=c.vx;c.y+=c.vy;c.vy+=0.35;c.vx*=0.99;c.rot+=c.rv;c.life-=c.decay; cX.save();cX.translate(c.x,c.y);cX.rotate(c.rot*Math.PI/180);cX.globalAlpha=Math.max(0,c.life);cX.fillStyle=c.c; if(c.shape==='r')cX.fillRect(-c.r,-c.r*0.6,c.r*2,c.r*1.2); else{cX.beginPath();cX.arc(0,0,c.r,0,Math.PI*2);cX.fill();} cX.restore(); }
+      if(alive>0)requestAnimationFrame(drawC);else{confettiOn=false;cX.clearRect(0,0,cC.width,cC.height);}
+    }
+
+    /* ---- RIPPLE ---- */
+    document.addEventListener('click',e=>{
+      const btn=e.target.closest('.btn');if(!btn)return;
+      const r=document.createElement('span');r.className='ripple';
+      const rect=btn.getBoundingClientRect(),sz=Math.max(rect.width,rect.height)*2;
+      r.style.width=r.style.height=sz+'px';
+      r.style.left=(e.clientX-rect.left-sz/2)+'px';
+      r.style.top=(e.clientY-rect.top-sz/2)+'px';
+      btn.appendChild(r);setTimeout(()=>r.remove(),600);
+    });
+
+    /* ---- VIEWS ---- */
+    let currentView='home-view';
+    function goTo(id){
+      if(id===currentView)return;
+      const cur=document.getElementById(currentView);
+      if(cur){cur.classList.remove('active');cur.classList.add('exiting');setTimeout(()=>cur.classList.remove('exiting'),300);}
+      setTimeout(()=>{
+        if(id==='receive-loading'){activate('receive-loading');loadRecommendation();}
+        else if(id==='submit-loading'){activate('submit-loading');}
+        else activate(id);
+      },200);
+    }
+    function activate(id){
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active','exiting'));
+      const t=document.getElementById(id);if(t){t.classList.add('active');currentView=id;}
+    }
+
+    /* ---- LOAD REC ---- */
+    async function loadRecommendation(){
+      try{
+        let rec;
+        if(USE_DEMO_MODE){await new Promise(r=>setTimeout(r,1400));rec=DEMO_RECS[Math.floor(Math.random()*DEMO_RECS.length)];}
+        else{const{data,error}=await supabase.from('recommendations').select('*').neq('fingerprint',userFingerprint).neq('fingerprint','null');if(error)throw error;if(!data||!data.length){showToast('No recommendations yet. Be the first!');goTo('home-view');return;}rec=data[Math.floor(Math.random()*data.length)];}
+        currentRecommendation=rec;
+        document.getElementById('result-title').textContent=rec.title;
+        document.getElementById('result-reason').textContent='\u201C'+rec.reason+'\u201D';
+        document.getElementById('result-date').textContent='Pressed on '+formatDate(rec.created_at);
+        document.getElementById('amazon-link').href=generateAmazonLink(rec.title);
+        const coverWrap=document.getElementById('result-cover-wrap'),coverImg=document.getElementById('result-cover');
+        coverWrap.style.display='none';
+        const titleParts=rec.title.split(/ by /i),bookTitle=titleParts[0].trim(),bookAuthor=titleParts.length>1?titleParts[titleParts.length-1].trim():'';
+        try{const resp=await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(bookTitle+(bookAuthor?' '+bookAuthor:''))}&limit=1&fields=cover_i`);const json=await resp.json();if(json.docs&&json.docs.length>0&&json.docs[0].cover_i){coverImg.src=`https://covers.openlibrary.org/b/id/${json.docs[0].cover_i}-L.jpg`;coverImg.onload=()=>{coverWrap.style.display='flex';};coverImg.onerror=()=>{coverWrap.style.display='none';};}}catch(e){}
+        goTo('result-view');
+      }catch(e){console.error(e);showToast('Something went wrong.');goTo('home-view');}
+    }
+
+    /* ---- SUBMIT ---- */
+    async function submitRecommendation(){
+      const title=document.getElementById('book-title').value.trim(),reason=document.getElementById('book-reason').value.trim();
+      if(!title||!reason){showToast('Please fill in both fields.');return;}
+      if(containsProfanity(title)||containsProfanity(reason)){showToast('Please keep it respectful.');return;}
+      goTo('submit-loading');
+      try{
+        if(USE_DEMO_MODE)await new Promise(r=>setTimeout(r,1000));
+        else{const{error}=await supabase.from('recommendations').insert([{title,reason,fingerprint:userFingerprint}]);if(error)throw error;}
+        document.getElementById('book-title').value='';document.getElementById('book-reason').value='';updateCharCount();updateSubmitBtn();
+        setTimeout(()=>{goTo('confirm-view');setTimeout(fireConfetti,300);},200);
+      }catch(e){console.error(e);showToast('Could not submit.');goTo('submit-view');}
+    }
+
+    async function reportRecommendation(){
+      if(!currentRecommendation)return;
+      if(!USE_DEMO_MODE&&supabase){try{await supabase.from('reports').insert([{recommendation_id:currentRecommendation.id,reporter_fingerprint:userFingerprint,reason:'user_report'}]);}catch(e){}}
+      showToast('Reported. Thank you.');
+    }
+
+    function downloadShareCard(){
+      if(!currentRecommendation)return;
+      const cv=document.createElement('canvas');cv.width=1080;cv.height=1350;const c=cv.getContext('2d');
+      const bg='#e8e8e8';
+
       // Background
-      ctx.fillStyle = cream;
-      ctx.fillRect(0, 0, width, height);
-      
-      // Add subtle texture (noise effect)
-      ctx.globalAlpha = 0.03;
-      for (let i = 0; i < 5000; i++) {
-        ctx.fillStyle = Math.random() > 0.5 ? ink : cream;
-        ctx.fillRect(
-          Math.random() * width,
-          Math.random() * height,
-          1, 1
-        );
-      }
-      ctx.globalAlpha = 1;
-      
-      // Outer border
-      ctx.strokeStyle = ink;
-      ctx.lineWidth = 4;
-      ctx.strokeRect(40, 40, width - 80, height - 80);
-      
-      // Inner border
-      ctx.lineWidth = 1;
-      ctx.strokeRect(55, 55, width - 110, height - 110);
-      
-      // Corner ornaments
-      const cornerSize = 20;
-      const corners = [
-        [70, 70], [width - 70, 70], 
-        [70, height - 70], [width - 70, height - 70]
-      ];
-      ctx.fillStyle = red;
-      corners.forEach(([x, y]) => {
-        ctx.beginPath();
-        ctx.moveTo(x, y - cornerSize/2);
-        ctx.lineTo(x + cornerSize/2, y);
-        ctx.lineTo(x, y + cornerSize/2);
-        ctx.lineTo(x - cornerSize/2, y);
-        ctx.closePath();
-        ctx.fill();
-      });
-      
-      // Header text - BROADSIDE
-      ctx.fillStyle = ink;
-      ctx.font = '700 72px Playfair Display, Georgia, serif';
-      ctx.textAlign = 'center';
-      ctx.letterSpacing = '0.15em';
-      ctx.fillText('BROADSIDE', width/2, 160);
-      
-      // Tagline
-      ctx.font = 'italic 28px Georgia, serif';
-      ctx.fillStyle = inkLight;
-      ctx.fillText('book recommendations from strangers', width/2, 210);
-      
-      // Decorative line under header
-      ctx.strokeStyle = ink;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(150, 250);
-      ctx.lineTo(width - 150, 250);
-      ctx.stroke();
-      
-      // Small diamonds on the line
-      ctx.fillStyle = gold;
-      [width/2 - 100, width/2, width/2 + 100].forEach(x => {
-        ctx.beginPath();
-        ctx.moveTo(x, 242);
-        ctx.lineTo(x + 8, 250);
-        ctx.lineTo(x, 258);
-        ctx.lineTo(x - 8, 250);
-        ctx.closePath();
-        ctx.fill();
-      });
-      
-      // Book title
-      const bookTitle = document.getElementById('result-title').textContent;
-      ctx.fillStyle = ink;
-      ctx.font = '700 52px Playfair Display, Georgia, serif';
-      
-      // Word wrap for title
-      const titleLines = wrapText(ctx, bookTitle, width - 200);
-      let titleY = 380;
-      titleLines.forEach(line => {
-        ctx.fillText(line, width/2, titleY);
-        titleY += 65;
-      });
-      
-      // Decorative separator
-      ctx.strokeStyle = inkLight;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(300, titleY + 20);
-      ctx.lineTo(width - 300, titleY + 20);
-      ctx.stroke();
-      
-      // Quote/reason
-      const reason = document.getElementById('result-reason').textContent;
-      ctx.font = 'italic 36px Georgia, serif';
-      ctx.fillStyle = inkLight;
-      
-      const reasonLines = wrapText(ctx, `"${reason}"`, width - 180);
-      let reasonY = titleY + 90;
-      reasonLines.forEach(line => {
-        ctx.fillText(line, width/2, reasonY);
-        reasonY += 50;
-      });
-      
-      // Bottom decorative line
-      ctx.strokeStyle = ink;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(150, height - 220);
-      ctx.lineTo(width - 150, height - 220);
-      ctx.stroke();
-      
-      // Press icon (simplified)
-      drawPressIcon(ctx, width/2, height - 150, gold, ink);
-      
-      // URL
-      ctx.fillStyle = ink;
-      ctx.font = '600 32px Playfair Display, Georgia, serif';
-      ctx.fillText('broadside.press', width/2, height - 80);
-      
-      // Download the image
-      const link = document.createElement('a');
-      link.download = 'broadside-recommendation.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    }
+      c.fillStyle=bg;
+      c.fillRect(0,0,1080,1350);
 
-    function wrapText(ctx, text, maxWidth) {
-      const words = text.split(' ');
-      const lines = [];
-      let currentLine = '';
-      
-      words.forEach(word => {
-        const testLine = currentLine + (currentLine ? ' ' : '') + word;
-        const metrics = ctx.measureText(testLine);
-        
-        if (metrics.width > maxWidth && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      });
-      
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      
-      return lines;
-    }
+      // Large outlined B watermark (bottom-right)
+      c.font='400 680px "EB Garamond",Georgia,serif';
+      c.textAlign='right';
+      c.textBaseline='bottom';
+      // Outline stroke
+      c.strokeStyle='rgba(0,0,0,0.03)';
+      c.lineWidth=1.5;
+      c.strokeText('B',1020,1200);
+      // Emboss highlight
+      c.fillStyle='rgba(255,255,255,0.35)';
+      c.fillText('B',1019,1199);
+      // Emboss shadow
+      c.fillStyle='rgba(0,0,0,0.02)';
+      c.fillText('B',1021,1201);
 
-    function drawPressIcon(ctx, x, y, goldColor, inkColor) {
-      ctx.save();
-      ctx.translate(x - 30, y - 25);
-      ctx.scale(0.8, 0.8);
-      
-      // Simplified press shape
-      ctx.strokeStyle = goldColor;
-      ctx.lineWidth = 2;
-      
-      // Base
-      ctx.beginPath();
-      ctx.moveTo(0, 50);
-      ctx.lineTo(60, 50);
-      ctx.stroke();
-      
-      // Uprights
-      ctx.beginPath();
-      ctx.moveTo(10, 50);
-      ctx.lineTo(10, 15);
-      ctx.moveTo(50, 50);
-      ctx.lineTo(50, 15);
-      ctx.stroke();
-      
-      // Top bar
-      ctx.beginPath();
-      ctx.moveTo(5, 15);
-      ctx.lineTo(55, 15);
-      ctx.stroke();
-      
-      // Platen
-      ctx.beginPath();
-      ctx.moveTo(15, 35);
-      ctx.lineTo(45, 35);
-      ctx.lineTo(48, 45);
-      ctx.lineTo(12, 45);
-      ctx.closePath();
-      ctx.stroke();
-      
-      // Lever
-      ctx.beginPath();
-      ctx.moveTo(50, 15);
-      ctx.lineTo(65, 0);
-      ctx.stroke();
-      
-      // Handle ball
-      ctx.beginPath();
-      ctx.arc(67, -2, 5, 0, Math.PI * 2);
-      ctx.fillStyle = goldColor;
-      ctx.fill();
-      
-      ctx.restore();
-    }
+      c.textAlign='center';
+      c.textBaseline='alphabetic';
 
-    function showView(viewId) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      document.getElementById(viewId).classList.add('active');
-      
-      // Reset paper animation
-      const paper = document.querySelector('#' + viewId + ' .paper-emerge');
-      if (paper) {
-        paper.style.animation = 'none';
-        paper.offsetHeight; // Trigger reflow
-        paper.style.animation = null;
-      }
-    }
+      // Thin rule across top
+      c.strokeStyle='rgba(0,0,0,0.04)';
+      c.lineWidth=1;
+      c.beginPath();c.moveTo(100,120);c.lineTo(980,120);c.stroke();
 
-    function updateCharCount(textarea) {
-      document.getElementById('char-count').textContent = textarea.value.length;
-    }
+      // Eyebrow — embossed "YOUR BROADSIDE"
+      c.font='600 22px "Space Grotesk",sans-serif';
+      // Light pass (highlight top-left)
+      c.fillStyle='rgba(255,255,255,0.7)';
+      c.fillText('YOUR BROADSIDE',539,178);
+      // Dark pass (shadow bottom-right)
+      c.fillStyle='rgba(0,0,0,0.08)';
+      c.fillText('YOUR BROADSIDE',541,180);
+      // Base pass (same as bg — invisible face)
+      c.fillStyle=bg;
+      c.fillText('YOUR BROADSIDE',540,179);
 
-    async function submitRecommendation(event) {
-      event.preventDefault();
-      
-      const title = document.getElementById('book-title').value.trim();
-      const reason = document.getElementById('book-reason').value.trim();
-      
-      if (!title || !reason) return;
-      
-      // Animate lever
-      const pressSvg = document.getElementById('press-svg');
-      pressSvg.classList.add('pulled');
-      
-      // Show loading briefly
-      setTimeout(() => {
-        showView('loading-view');
-        pressSvg.classList.remove('pulled');
-      }, 400);
-      
-      // Save recommendation
-      await saveRecommendation(title, reason);
-      
-      // Clear form
-      document.getElementById('submit-form').reset();
-      document.getElementById('char-count').textContent = '0';
-      
-      setTimeout(() => {
-        showView('thankyou-view');
-      }, 600);
-    }
+      // Small rule under eyebrow
+      c.strokeStyle='rgba(0,0,0,0.04)';
+      c.beginPath();c.moveTo(440,200);c.lineTo(640,200);c.stroke();
 
-    async function findRecommendation() {
-      // Animate lever
-      const pressSvg = document.getElementById('press-svg');
-      pressSvg.classList.add('pulled');
-      
-      setTimeout(() => {
-        showView('loading-view');
-        pressSvg.classList.remove('pulled');
-      }, 400);
-      
-      // Fetch recommendation
-      const rec = await getRandomRecommendation();
-      
-      setTimeout(() => {
-        if (!rec) {
-          alert('No recommendations found. Be the first to share one!');
-          showView('home-view');
-          return;
-        }
-        
-        // Populate result
-        document.getElementById('result-title').textContent = rec.title;
-        document.getElementById('result-reason').textContent = rec.reason;
-        document.getElementById('result-date').textContent = 'Pressed on ' + formatDate(rec.created_at);
-        document.getElementById('amazon-link').href = generateAmazonLink(rec.title);
-        
-        // Reset report button
-        const reportBtn = document.getElementById('report-btn');
-        reportBtn.textContent = '⚑ Report this recommendation';
-        reportBtn.classList.remove('reported');
-        
-        showView('result-view');
-      }, 800);
-    }
+      // Title — large EB Garamond, black ink
+      c.font='500 52px "EB Garamond",Georgia,serif';
+      c.fillStyle='#1a1a1a';
+      const tl=wrapText(c,currentRecommendation.title,760);
+      let ty=310;
+      tl.forEach(l=>{c.fillText(l,540,ty);ty+=68;});
 
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
-      });
-    }
+      // Thin rule under title
+      c.strokeStyle='rgba(0,0,0,0.04)';
+      c.beginPath();c.moveTo(380,ty+10);c.lineTo(700,ty+10);c.stroke();
 
-    // =====================
-    // INIT
-    // =====================
-    
-    document.addEventListener('DOMContentLoaded', async () => {
-      userFingerprint = generateFingerprint();
-      if (!USE_DEMO_MODE) {
-        initSupabase();
-      }
-      
-      // Register service worker for PWA
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
-          console.log('ServiceWorker registered:', registration.scope);
-        } catch (error) {
-          console.log('ServiceWorker registration failed:', error);
-        }
-      }
+      // Reason — italic, dark grey
+      c.font='italic 400 30px "EB Garamond",Georgia,serif';
+      c.fillStyle='#555';
+      const rl=wrapText(c,'\u201C'+currentRecommendation.reason+'\u201D',700);
+      let ry=ty+65;
+      rl.forEach(l=>{c.fillText(l,540,ry);ry+=44;});
+
+      // Bottom section
+      // Thin rule
+      c.strokeStyle='rgba(0,0,0,0.04)';
+      c.beginPath();c.moveTo(100,1170);c.lineTo(980,1170);c.stroke();
+
+      // "broadside.press" — embossed
+      c.font='400 28px "EB Garamond",Georgia,serif';
+      c.fillStyle='rgba(255,255,255,0.5)';
+      c.fillText('broadside.press',539,1218);
+      c.fillStyle='rgba(0,0,0,0.06)';
+      c.fillText('broadside.press',541,1220);
+      c.fillStyle=bg;
+      c.fillText('broadside.press',540,1219);
+
+      // Tagline — embossed small text
+      c.font='500 16px "Space Grotesk",sans-serif';
+      c.fillStyle='rgba(255,255,255,0.5)';
+      c.fillText('A BOOK FROM A STRANGER',539,1258);
+      c.fillStyle='rgba(0,0,0,0.06)';
+      c.fillText('A BOOK FROM A STRANGER',541,1260);
+      c.fillStyle=bg;
+      c.fillText('A BOOK FROM A STRANGER',540,1259);
+
+      const a=document.createElement('a');a.download='broadside-'+currentRecommendation.title.replace(/[^a-z0-9]/gi,'-').toLowerCase().substring(0,30)+'.png';a.href=cv.toDataURL('image/png');a.click();
+      showToast('Share card downloaded');
+    }
+    function wrapText(c,t,mw){const w=t.split(' '),l=[];let cur='';w.forEach(wd=>{const test=cur+(cur?' ':'')+wd;if(c.measureText(test).width>mw&&cur){l.push(cur);cur=wd;}else cur=test;});if(cur)l.push(cur);return l;}
+
+    function generateAmazonLink(t){return`https://www.amazon.co.uk/s?k=${encodeURIComponent(t)}&tag=${AMAZON_AFFILIATE_TAG}`;}
+    function formatDate(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
+    function copyLink(){navigator.clipboard.writeText('https://broadside.press').then(()=>showToast('Link copied')).catch(()=>showToast('Could not copy'));}
+    function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+    function updateCharCount(){const ta=document.getElementById('book-reason'),c=document.getElementById('reason-count'),l=ta.value.length;c.textContent=l+' / 280';c.className='char-count'+(l>260?' at-limit':l>220?' near-limit':'');}
+    function updateSubmitBtn(){const t=document.getElementById('book-title').value.trim(),r=document.getElementById('book-reason').value.trim();document.getElementById('submit-btn').disabled=!(t&&r);}
+    async function loadCount(){const el=document.getElementById('rec-count');if(USE_DEMO_MODE){el.textContent=DEMO_RECS.length;return;}try{const{count,error}=await supabase.from('recommendations').select('*',{count:'exact',head:true});if(!error&&count!==null)el.textContent=count;}catch(e){el.textContent='\u2014';}}
+
+    document.addEventListener('DOMContentLoaded',()=>{
+      userFingerprint=generateFingerprint();
+      document.getElementById('book-reason').addEventListener('input',()=>{updateCharCount();updateSubmitBtn();});
+      document.getElementById('book-title').addEventListener('input',updateSubmitBtn);
+      loadCount();
+      if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
     });
   </script>
 </body>

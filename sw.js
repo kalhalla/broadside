@@ -1,77 +1,47 @@
-const CACHE_NAME = 'broadside-v1';
+const CACHE_NAME = 'broadside-v3';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Special+Elite&display=swap'
+  'https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Space+Grotesk:wght@300;400;500;600&display=swap'
 ];
 
-// Install event - cache core assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+      .then(cache => cache.addAll(urlsToCache))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys().then(names =>
+      Promise.all(names.map(name => {
+        if (name !== CACHE_NAME) return caches.delete(name);
+      }))
+    ).then(() => self.clients.claim())
   );
 });
 
-// Fetch event - serve from cache, fall back to network
 self.addEventListener('fetch', event => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-  
-  // Skip Supabase API calls (always fetch fresh)
   if (event.request.url.includes('supabase.co')) return;
-  
+  if (event.request.url.includes('openlibrary.org')) return;
+
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Return cached version or fetch from network
-        if (response) {
-          return response;
-        }
-        
-        return fetch(event.request).then(response => {
-          // Don't cache non-successful responses
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          
-          // Clone the response
-          const responseToCache = response.clone();
-          
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-          
-          return response;
-        });
-      })
-      .catch(() => {
-        // Offline fallback for HTML pages
-        if (event.request.headers.get('accept').includes('text/html')) {
-          return caches.match('/index.html');
-        }
-      })
+    caches.match(event.request).then(response => {
+      if (response) return response;
+      return fetch(event.request).then(resp => {
+        if (!resp || resp.status !== 200 || resp.type !== 'basic') return resp;
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return resp;
+      });
+    }).catch(() => {
+      if (event.request.headers.get('accept').includes('text/html')) {
+        return caches.match('/index.html');
+      }
+    })
   );
 });
